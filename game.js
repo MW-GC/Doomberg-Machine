@@ -236,6 +236,12 @@ function placeObject(type, x, y) {
                 }
             });
             
+            // Store original positions
+            pivot.originalPosition = { x: pivot.position.x, y: pivot.position.y };
+            pivot.originalAngle = pivot.angle;
+            plank.originalPosition = { x: plank.position.x, y: plank.position.y };
+            plank.originalAngle = plank.angle;
+            
             // Add constraint to make it rotate around pivot
             const constraint = Matter.Constraint.create({
                 bodyA: pivot,
@@ -251,6 +257,10 @@ function placeObject(type, x, y) {
     }
     
     if (body) {
+        // Store original position and angle for reset
+        body.originalPosition = { x: body.position.x, y: body.position.y };
+        body.originalAngle = body.angle;
+        
         Composite.add(world, body);
         placedObjects.push(body);
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
@@ -266,8 +276,10 @@ function runMachine() {
     // Make NPC dynamic
     Body.setStatic(npc, false);
     
-    // Create runner
-    runner = Runner.create();
+    // Create or reuse runner
+    if (!runner) {
+        runner = Runner.create();
+    }
     Runner.run(runner, engine);
     
     // Setup collision detection
@@ -322,11 +334,11 @@ function resetMachine() {
     
     // Reset all dynamic bodies to their original positions
     placedObjects.forEach(obj => {
-        if (obj.type === 'body' && !obj.isStatic) {
-            Body.setPosition(obj, obj.positionPrev);
+        if (obj.type === 'body' && !obj.isStatic && obj.originalPosition) {
+            Body.setPosition(obj, obj.originalPosition);
             Body.setVelocity(obj, { x: 0, y: 0 });
             Body.setAngularVelocity(obj, 0);
-            Body.setAngle(obj, 0);
+            Body.setAngle(obj, obj.originalAngle || 0);
         }
     });
     
