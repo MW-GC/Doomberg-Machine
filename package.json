@@ -1,0 +1,15 @@
+{
+  "name": "doomberg-machine",
+  "version": "1.0.0",
+  "description": "A small game about making a 'Rube Goldberg' machine that must end with the death of the NPC.",
+  "main": "game.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "matter-js": "^0.20.0"
+  }
+}
