@@ -178,24 +178,25 @@ function setupEventListeners() {
     
     // Keyboard controls for rotating ramps
     document.addEventListener('keydown', (event) => {
-        if (isRunning) return;
+        if (isRunning || selectedTool !== 'ramp') return;
         
-        if (selectedTool === 'ramp') {
-            if (event.key === 'q' || event.key === 'Q') {
-                // Rotate counter-clockwise
-                currentRampAngle -= ROTATION_INCREMENT;
-                // Normalize angle to keep it within a reasonable range
-                currentRampAngle = ((currentRampAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
-                updateStatus(`Ramp angle: ${Math.round(currentRampAngle * 180 / Math.PI)}°`);
-            } else if (event.key === 'e' || event.key === 'E') {
-                // Rotate clockwise
-                currentRampAngle += ROTATION_INCREMENT;
-                // Normalize angle to keep it within a reasonable range
-                currentRampAngle = ((currentRampAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
-                updateStatus(`Ramp angle: ${Math.round(currentRampAngle * 180 / Math.PI)}°`);
-            }
+        if (event.key === 'q' || event.key === 'Q') {
+            // Rotate counter-clockwise
+            rotateRamp(-ROTATION_INCREMENT);
+        } else if (event.key === 'e' || event.key === 'E') {
+            // Rotate clockwise
+            rotateRamp(ROTATION_INCREMENT);
         }
     });
+}
+
+function rotateRamp(angleChange) {
+    currentRampAngle += angleChange;
+    // Normalize angle to keep it within [0, 2π) range
+    currentRampAngle = ((currentRampAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+    // Display angle in degrees
+    const degrees = Math.round(currentRampAngle * 180 / Math.PI);
+    updateStatus(`Ramp angle: ${degrees}°`);
 }
 
 function placeObject(type, x, y) {
