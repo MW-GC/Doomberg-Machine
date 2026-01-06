@@ -20,6 +20,7 @@ let isRunning = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
+let currentRampAngle = -0.3; // Default ramp angle
 
 // Canvas dimensions
 const CANVAS_WIDTH = 1200;
@@ -160,6 +161,10 @@ function setupEventListeners() {
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedTool = btn.dataset.tool;
+            // Reset ramp angle when selecting ramp tool
+            if (selectedTool === 'ramp') {
+                currentRampAngle = -0.3;
+            }
             updateStatus(`Selected: ${btn.textContent.trim()}. Click on canvas to place.`);
         });
     });
@@ -168,6 +173,23 @@ function setupEventListeners() {
     document.getElementById('runBtn').addEventListener('click', runMachine);
     document.getElementById('resetBtn').addEventListener('click', resetMachine);
     document.getElementById('clearBtn').addEventListener('click', clearAll);
+    
+    // Keyboard controls for rotating ramps
+    document.addEventListener('keydown', (event) => {
+        if (isRunning) return;
+        
+        if (selectedTool === 'ramp') {
+            if (event.key === 'q' || event.key === 'Q') {
+                // Rotate counter-clockwise
+                currentRampAngle -= Math.PI / 12; // 15 degrees
+                updateStatus(`Ramp angle: ${Math.round(currentRampAngle * 180 / Math.PI)}°`);
+            } else if (event.key === 'e' || event.key === 'E') {
+                // Rotate clockwise
+                currentRampAngle += Math.PI / 12; // 15 degrees
+                updateStatus(`Ramp angle: ${Math.round(currentRampAngle * 180 / Math.PI)}°`);
+            }
+        }
+    });
 }
 
 function placeObject(type, x, y) {
@@ -207,7 +229,7 @@ function placeObject(type, x, y) {
         case 'ramp':
             body = Bodies.rectangle(x, y, 120, 10, {
                 isStatic: true,
-                angle: -0.3,
+                angle: currentRampAngle,
                 render: {
                     fillStyle: '#95E1D3'
                 }

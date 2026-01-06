@@ -22,11 +22,12 @@ Build creative chain-reaction contraptions using various physics objects to doom
 
 1. **Open the game**: Simply open `index.html` in a web browser
 2. **Select an object**: Click on one of the object buttons (Ball, Box, Domino, etc.)
-3. **Place objects**: Click anywhere on the canvas to place the selected object
-4. **Build your machine**: Create a Rube Goldberg contraption that will hit the NPC
-5. **Run the simulation**: Click the "▶️ Run Machine" button to start the physics
-6. **Watch the chaos**: See if your contraption successfully dooms the NPC!
-7. **Try again**: Use "🔄 Reset" to restore positions or "🗑️ Clear All" to start over
+3. **Rotate ramps** (optional): When the Ramp tool is selected, press **Q** to rotate counter-clockwise or **E** to rotate clockwise (15° increments)
+4. **Place objects**: Click anywhere on the canvas to place the selected object
+5. **Build your machine**: Create a Rube Goldberg contraption that will hit the NPC
+6. **Run the simulation**: Click the "▶️ Run Machine" button to start the physics
+7. **Watch the chaos**: See if your contraption successfully dooms the NPC!
+8. **Try again**: Use "🔄 Reset" to restore positions or "🗑️ Clear All" to start over
 
 ## Running the Game
 
