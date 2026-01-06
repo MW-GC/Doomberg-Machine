@@ -9,6 +9,13 @@ const Engine = Matter.Engine,
       MouseConstraint = Matter.MouseConstraint,
       Body = Matter.Body;
 
+// Game constants
+const CANVAS_WIDTH = 1200;
+const CANVAS_HEIGHT = 600;
+const GROUND_HEIGHT = 20;
+const DEFAULT_RAMP_ANGLE = -0.3; // Default ramp angle in radians (~-17 degrees)
+const ROTATION_INCREMENT = Math.PI / 12; // 15 degrees per key press
+
 // Game variables
 let engine;
 let render;
@@ -20,12 +27,7 @@ let isRunning = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
-let currentRampAngle = -0.3; // Default ramp angle
-
-// Canvas dimensions
-const CANVAS_WIDTH = 1200;
-const CANVAS_HEIGHT = 600;
-const GROUND_HEIGHT = 20;
+let currentRampAngle = DEFAULT_RAMP_ANGLE;
 
 // Initialize the game
 function init() {
@@ -163,7 +165,7 @@ function setupEventListeners() {
             selectedTool = btn.dataset.tool;
             // Reset ramp angle when selecting ramp tool
             if (selectedTool === 'ramp') {
-                currentRampAngle = -0.3;
+                currentRampAngle = DEFAULT_RAMP_ANGLE;
             }
             updateStatus(`Selected: ${btn.textContent.trim()}. Click on canvas to place.`);
         });
@@ -181,11 +183,15 @@ function setupEventListeners() {
         if (selectedTool === 'ramp') {
             if (event.key === 'q' || event.key === 'Q') {
                 // Rotate counter-clockwise
-                currentRampAngle -= Math.PI / 12; // 15 degrees
+                currentRampAngle -= ROTATION_INCREMENT;
+                // Normalize angle to keep it within a reasonable range
+                currentRampAngle = ((currentRampAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
                 updateStatus(`Ramp angle: ${Math.round(currentRampAngle * 180 / Math.PI)}°`);
             } else if (event.key === 'e' || event.key === 'E') {
                 // Rotate clockwise
-                currentRampAngle += Math.PI / 12; // 15 degrees
+                currentRampAngle += ROTATION_INCREMENT;
+                // Normalize angle to keep it within a reasonable range
+                currentRampAngle = ((currentRampAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
                 updateStatus(`Ramp angle: ${Math.round(currentRampAngle * 180 / Math.PI)}°`);
             }
         }
