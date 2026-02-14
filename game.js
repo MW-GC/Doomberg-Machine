@@ -214,15 +214,6 @@ function rotateRamp(angleChange) {
     updateStatus(`Ramp angle: ${degrees}°`);
 }
 
-function normalizeAngle(angle) {
-    // Normalize angle to [0, 2π) range
-    angle = angle % (2 * Math.PI);
-    if (angle < 0) {
-        angle += 2 * Math.PI;
-    }
-    return angle;
-}
-
 function placeObject(type, x, y) {
     let body;
     
