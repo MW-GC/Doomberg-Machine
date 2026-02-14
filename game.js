@@ -43,11 +43,9 @@ function init() {
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
             wireframes: false,
-            background: 'transparent'
+            background: '#87CEEB'
         }
     });
-    
-    Render.run(render);
     
     // Create ground
     const ground = Bodies.rectangle(CANVAS_WIDTH / 2, CANVAS_HEIGHT - GROUND_HEIGHT / 2, CANVAS_WIDTH, GROUND_HEIGHT, {
@@ -81,6 +79,10 @@ function init() {
     
     // Setup button listeners
     setupEventListeners();
+    
+    // Start render after all bodies are created; runner will be started in runMachine()
+    Render.run(render);
+    runner = Runner.create();
     
     updateStatus('Ready to build! Select an object and click to place it.');
 }
