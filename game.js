@@ -9,6 +9,28 @@ const Engine = Matter.Engine,
       MouseConstraint = Matter.MouseConstraint,
       Body = Matter.Body;
 
+// Game constants
+const CANVAS_WIDTH = 1200;
+const CANVAS_HEIGHT = 600;
+const GROUND_HEIGHT = 20;
+
+/**
+ * Normalize an angle in radians to the range [0, 2π).
+ * @param {number} angle
+ * @returns {number}
+ */
+function normalizeAngle(angle) {
+    const twoPi = 2 * Math.PI;
+    let result = angle % twoPi;
+    if (result < 0) {
+        result += twoPi;
+    }
+    return result;
+}
+
+const DEFAULT_RAMP_ANGLE = normalizeAngle(-17 * Math.PI / 180); // -17 degrees, normalized to [0, 2π)
+const ROTATION_INCREMENT = Math.PI / 12; // 15 degrees per key press
+
 // Game variables
 let engine;
 let render;
@@ -20,11 +42,7 @@ let isRunning = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
-
-// Canvas dimensions
-const CANVAS_WIDTH = 1200;
-const CANVAS_HEIGHT = 600;
-const GROUND_HEIGHT = 20;
+let currentRampAngle = DEFAULT_RAMP_ANGLE;
 
 // Initialize the game
 function init() {
@@ -160,6 +178,10 @@ function setupEventListeners() {
             document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             selectedTool = btn.dataset.tool;
+            // Reset ramp angle when selecting ramp tool
+            if (selectedTool === 'ramp') {
+                currentRampAngle = DEFAULT_RAMP_ANGLE;
+            }
             updateStatus(`Selected: ${btn.textContent.trim()}. Click on canvas to place.`);
         });
     });
@@ -168,6 +190,37 @@ function setupEventListeners() {
     document.getElementById('runBtn').addEventListener('click', runMachine);
     document.getElementById('resetBtn').addEventListener('click', resetMachine);
     document.getElementById('clearBtn').addEventListener('click', clearAll);
+    
+    // Keyboard controls for rotating ramps
+    document.addEventListener('keydown', (event) => {
+        if (isRunning || selectedTool !== 'ramp') return;
+        
+        if (event.key === 'q' || event.key === 'Q') {
+            // Rotate counter-clockwise
+            rotateRamp(-ROTATION_INCREMENT);
+        } else if (event.key === 'e' || event.key === 'E') {
+            // Rotate clockwise
+            rotateRamp(ROTATION_INCREMENT);
+        }
+    });
+}
+
+function rotateRamp(angleChange) {
+    currentRampAngle += angleChange;
+    // Normalize angle to keep it within [0, 2π) range
+    currentRampAngle = normalizeAngle(currentRampAngle);
+    // Display angle in degrees, wrapped to [0, 359]
+    const degrees = Math.round(currentRampAngle * 180 / Math.PI) % 360;
+    updateStatus(`Ramp angle: ${degrees}°`);
+}
+
+function normalizeAngle(angle) {
+    // Normalize angle to [0, 2π) range
+    angle = angle % (2 * Math.PI);
+    if (angle < 0) {
+        angle += 2 * Math.PI;
+    }
+    return angle;
 }
 
 function placeObject(type, x, y) {
@@ -207,7 +260,7 @@ function placeObject(type, x, y) {
         case 'ramp':
             body = Bodies.rectangle(x, y, 120, 10, {
                 isStatic: true,
-                angle: -0.3,
+                angle: currentRampAngle,
                 render: {
                     fillStyle: '#95E1D3'
                 }
