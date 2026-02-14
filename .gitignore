@@ -301,6 +301,9 @@ FakesAssemblies/
 .ntvs_analysis.dat
 node_modules/
 
+# But keep the local Matter.js copy
+!matter.min.js
+
 # Visual Studio 6 build log
 *.plg
 
