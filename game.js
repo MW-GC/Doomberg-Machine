@@ -42,6 +42,7 @@ let isRunning = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
+let placedConstraints = [];
 let currentRampAngle = DEFAULT_RAMP_ANGLE;
 
 // Initialize the game
@@ -98,9 +99,26 @@ function init() {
     // Setup button listeners
     setupEventListeners();
     
+    // Setup collision detection (only once)
+    Events.on(engine, 'collisionStart', (event) => {
+        const pairs = event.pairs;
+        
+        pairs.forEach(pair => {
+            if ((pair.bodyA.label === 'npc' || pair.bodyB.label === 'npc') && !npcDoomed) {
+                // Check if collision is significant based on the other body's velocity
+                const otherBody = pair.bodyA.label === 'npc' ? pair.bodyB : pair.bodyA;
+                const velocity = Math.abs(otherBody.velocity.x) + Math.abs(otherBody.velocity.y);
+                
+                if (velocity > 2) {
+                    npcDoomed = true;
+                    doomNPC();
+                }
+            }
+        });
+    });
+    
     // Start render after all bodies are created; runner will be started in runMachine()
     Render.run(render);
-    runner = Runner.create();
     
     updateStatus('Ready to build! Select an object and click to place it.');
 }
@@ -164,8 +182,10 @@ function setupMouseControl() {
         if (isRunning || !selectedTool) return;
         
         const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
         
         placeObject(selectedTool, x, y);
     });
@@ -182,7 +202,9 @@ function setupEventListeners() {
             if (selectedTool === 'ramp') {
                 currentRampAngle = DEFAULT_RAMP_ANGLE;
             }
-            updateStatus(`Selected: ${btn.textContent.trim()}. Click on canvas to place.`);
+            // Extract just the text part without emoji
+            const toolName = selectedTool.charAt(0).toUpperCase() + selectedTool.slice(1);
+            updateStatus(`Selected: ${toolName}. Click on canvas to place.`);
         });
     });
     
@@ -297,7 +319,8 @@ function placeObject(type, x, y) {
             });
             
             Composite.add(world, [pivot, plank, constraint]);
-            placedObjects.push(pivot, plank, constraint);
+            placedObjects.push(pivot, plank);
+            placedConstraints.push(constraint);
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
             return;
     }
@@ -327,25 +350,6 @@ function runMachine() {
         runner = Runner.create();
     }
     Runner.run(runner, engine);
-    
-    // Setup collision detection
-    Events.on(engine, 'collisionStart', (event) => {
-        const pairs = event.pairs;
-        
-        pairs.forEach(pair => {
-            if ((pair.bodyA.label === 'npc' || pair.bodyB.label === 'npc') && !npcDoomed) {
-                // Check if collision is significant
-                const velocity = pair.bodyA.label === 'npc' ? 
-                    Math.abs(pair.bodyA.velocity.x) + Math.abs(pair.bodyA.velocity.y) :
-                    Math.abs(pair.bodyB.velocity.x) + Math.abs(pair.bodyB.velocity.y);
-                
-                if (velocity > 2) {
-                    npcDoomed = true;
-                    doomNPC();
-                }
-            }
-        });
-    });
     
     document.getElementById('runBtn').disabled = true;
     updateStatus('Machine running! Watch the chaos unfold...');
@@ -404,7 +408,11 @@ function clearAll() {
     placedObjects.forEach(obj => {
         Composite.remove(world, obj);
     });
+    placedConstraints.forEach(constraint => {
+        Composite.remove(world, constraint);
+    });
     placedObjects = [];
+    placedConstraints = [];
     
     // Reset if running
     if (isRunning) {

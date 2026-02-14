@@ -75,6 +75,11 @@ header p {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.tool-btn:focus, .action-btn:focus {
+    outline: 3px solid #4CAF50;
+    outline-offset: 2px;
+}
+
 .tool-btn.active {
     background: #667eea;
     color: white;
