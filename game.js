@@ -13,7 +13,22 @@ const Engine = Matter.Engine,
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 600;
 const GROUND_HEIGHT = 20;
-const DEFAULT_RAMP_ANGLE = -17 * Math.PI / 180; // -17 degrees converted to radians
+
+/**
+ * Normalize an angle in radians to the range [0, 2π).
+ * @param {number} angle
+ * @returns {number}
+ */
+function normalizeAngle(angle) {
+    const twoPi = 2 * Math.PI;
+    let result = angle % twoPi;
+    if (result < 0) {
+        result += twoPi;
+    }
+    return result;
+}
+
+const DEFAULT_RAMP_ANGLE = normalizeAngle(-17 * Math.PI / 180); // -17 degrees, normalized to [0, 2π)
 const ROTATION_INCREMENT = Math.PI / 12; // 15 degrees per key press
 
 // Game variables
@@ -194,8 +209,8 @@ function rotateRamp(angleChange) {
     currentRampAngle += angleChange;
     // Normalize angle to keep it within [0, 2π) range
     currentRampAngle = normalizeAngle(currentRampAngle);
-    // Display angle in degrees
-    const degrees = Math.round(currentRampAngle * 180 / Math.PI);
+    // Display angle in degrees, wrapped to [0, 359]
+    const degrees = Math.round(currentRampAngle * 180 / Math.PI) % 360;
     updateStatus(`Ramp angle: ${degrees}°`);
 }
 
