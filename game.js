@@ -80,10 +80,9 @@ function init() {
     // Setup button listeners
     setupEventListeners();
     
-    // Start render and runner after all bodies are created
+    // Start render after all bodies are created; runner will be started in runMachine()
     Render.run(render);
     runner = Runner.create();
-    Runner.run(runner, engine);
     
     updateStatus('Ready to build! Select an object and click to place it.');
 }
