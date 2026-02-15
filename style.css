@@ -266,12 +266,48 @@ header p {
     .controls {
         flex-direction: column;
         padding: 10px;
-        max-height: 40vh;
-        overflow-y: auto;
+        max-height: none;
+        overflow: visible;
     }
     
     .control-group {
         min-width: 100%;
+        margin-bottom: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: white;
+        overflow: hidden;
+    }
+    
+    .control-group h3 {
+        padding: 12px;
+        margin: 0;
+        background: #667eea;
+        color: white;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .control-group h3:after {
+        content: '▼';
+        font-size: 0.8em;
+        transition: transform 0.3s ease;
+    }
+    
+    .control-group.collapsed h3:after {
+        transform: rotate(-90deg);
+    }
+    
+    .control-group > *:not(h3) {
+        padding: 10px;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .control-group.collapsed > *:not(h3) {
+        display: none;
     }
     
     .tool-btn, .action-btn {

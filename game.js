@@ -124,6 +124,9 @@ let touchStartTime = 0;
 let touchStartPos = { x: 0, y: 0 };
 let longPressTimer = null;
 const LONG_PRESS_DURATION = 500; // ms for long press to delete
+let lastTouchDistance = 0; // For pinch-to-zoom detection
+let initialPinchAngle = 0; // For two-finger rotation
+let lastTouchAngle = 0;
 
 // Undo/Redo system
 let actionHistory = [];
@@ -319,7 +322,8 @@ function applyMobileUI() {
             <ol>
                 <li>Tap on an object type to select it</li>
                 <li>Tap on the canvas to place objects</li>
-                <li>Long-press on objects to delete them</li>
+                <li>Long-press (0.5s) on objects to delete them</li>
+                <li>For ramps: use two fingers to rotate the angle</li>
                 <li>Use Undo and Redo buttons to reverse actions</li>
                 <li>Build a contraption that will hit the NPC (red figure on the right)</li>
                 <li>Tap "Run Machine" to start the physics simulation</li>
@@ -332,6 +336,22 @@ function applyMobileUI() {
     
     // Add mobile class to body for CSS targeting
     document.body.classList.add('mobile-device');
+    
+    // Setup collapsible control groups
+    const controlGroups = document.querySelectorAll('.control-group');
+    controlGroups.forEach((group, index) => {
+        const heading = group.querySelector('h3');
+        if (heading) {
+            // Start with Actions and Status expanded, others collapsed
+            if (index !== 1 && index !== 3) { // Not Actions or Status
+                group.classList.add('collapsed');
+            }
+            
+            heading.addEventListener('click', () => {
+                group.classList.toggle('collapsed');
+            });
+        }
+    });
 }
 
 // Initialize the game
@@ -597,6 +617,18 @@ function setupMouseControl() {
 }
 
 function setupTouchControls() {
+    // Helper function to calculate distance between two touches
+    function getTouchDistance(touch1, touch2) {
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    // Helper function to calculate angle between two touches
+    function getTouchAngle(touch1, touch2) {
+        return Math.atan2(touch2.clientY - touch1.clientY, touch2.clientX - touch1.clientX);
+    }
+    
     // Prevent default touch behaviors to avoid zooming/scrolling
     canvas.addEventListener('touchstart', (event) => {
         event.preventDefault();
@@ -625,6 +657,19 @@ function setupTouchControls() {
                     }
                 }, LONG_PRESS_DURATION);
             }
+        } else if (event.touches.length === 2) {
+            // Two-finger touch - rotation for ramp
+            if (!isRunning && selectedTool === 'ramp') {
+                lastTouchDistance = getTouchDistance(event.touches[0], event.touches[1]);
+                lastTouchAngle = getTouchAngle(event.touches[0], event.touches[1]);
+                initialPinchAngle = lastTouchAngle;
+                
+                // Cancel long press timer if active
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            }
         }
     }, { passive: false });
     
@@ -635,6 +680,21 @@ function setupTouchControls() {
         if (longPressTimer) {
             clearTimeout(longPressTimer);
             longPressTimer = null;
+        }
+        
+        // Two-finger rotation for ramp
+        if (event.touches.length === 2 && !isRunning && selectedTool === 'ramp') {
+            const currentAngle = getTouchAngle(event.touches[0], event.touches[1]);
+            const angleDelta = currentAngle - lastTouchAngle;
+            
+            // Update ramp angle
+            rotateRamp(angleDelta);
+            lastTouchAngle = currentAngle;
+            
+            // Provide haptic feedback for rotation
+            if (navigator.vibrate) {
+                navigator.vibrate(5);
+            }
         }
     }, { passive: false });
     
@@ -649,8 +709,8 @@ function setupTouchControls() {
         
         const touchDuration = Date.now() - touchStartTime;
         
-        // Short tap - place object (if not a long press)
-        if (touchDuration < LONG_PRESS_DURATION && !isRunning && selectedTool) {
+        // Short tap - place object (if not a long press and single touch)
+        if (event.touches.length === 0 && touchDuration < LONG_PRESS_DURATION && !isRunning && selectedTool) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -663,6 +723,12 @@ function setupTouchControls() {
             
             placeObject(selectedTool, x, y);
         }
+        
+        // Reset touch tracking variables when all touches end
+        if (event.touches.length === 0) {
+            lastTouchDistance = 0;
+            lastTouchAngle = 0;
+        }
     }, { passive: false });
     
     canvas.addEventListener('touchcancel', (event) => {
@@ -673,6 +739,10 @@ function setupTouchControls() {
             clearTimeout(longPressTimer);
             longPressTimer = null;
         }
+        
+        // Reset touch tracking variables
+        lastTouchDistance = 0;
+        lastTouchAngle = 0;
     }, { passive: false });
 }
 
