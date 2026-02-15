@@ -147,6 +147,13 @@ let collisionCount = 0;
 let currentScore = 0;
 let currentStars = 0;
 
+// Replay/Recording system
+let isRecording = false;
+let isReplaying = false;
+let recordedFrames = [];
+let replayFrameIndex = 0;
+let replayRunner = null;
+
 /**
  * Apply explosion force to all nearby objects from an explosion center
  * @param {number} explosionX - X coordinate of explosion center
@@ -446,6 +453,13 @@ function init() {
         drawGrid(render.context);
     });
     
+    // Capture frames for recording during simulation
+    Events.on(engine, 'afterUpdate', () => {
+        if (isRecording && isRunning && !isPaused) {
+            recordedFrames.push(captureFrame());
+        }
+    });
+    
     // Start render after all bodies are created; runner will be started in runMachine()
     Render.run(render);
     
@@ -592,8 +606,68 @@ function setupEventListeners() {
         }
     });
     
+    // Replay/Recording buttons
+    const recordBtn = document.getElementById('recordBtn');
+    if (recordBtn) {
+        recordBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+    }
+    
+    const replayBtn = document.getElementById('replayBtn');
+    if (replayBtn) {
+        replayBtn.addEventListener('click', startReplay);
+    }
+    
+    const stopReplayBtn = document.getElementById('stopReplayBtn');
+    if (stopReplayBtn) {
+        stopReplayBtn.addEventListener('click', stopReplay);
+    }
+    
+    const saveRecordingBtn = document.getElementById('saveRecordingBtn');
+    if (saveRecordingBtn) {
+        saveRecordingBtn.addEventListener('click', () => {
+            const name = document.getElementById('recordingName').value;
+            saveRecording(name);
+        });
+    }
+    
+    const loadRecordingBtn = document.getElementById('loadRecordingBtn');
+    if (loadRecordingBtn) {
+        loadRecordingBtn.addEventListener('click', () => {
+            const name = document.getElementById('recordingList').value;
+            loadRecording(name);
+        });
+    }
+    
+    const deleteRecordingBtn = document.getElementById('deleteRecordingBtn');
+    if (deleteRecordingBtn) {
+        deleteRecordingBtn.addEventListener('click', () => {
+            const name = document.getElementById('recordingList').value;
+            if (confirm(`Delete recording "${name}"?`)) {
+                deleteRecording(name);
+            }
+        });
+    }
+    
+    // Allow Enter key in recording name input
+    const recordingNameInput = document.getElementById('recordingName');
+    if (recordingNameInput) {
+        recordingNameInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                const name = document.getElementById('recordingName').value;
+                saveRecording(name);
+            }
+        });
+    }
+    
     // Refresh saved list on page load
     refreshSavedList();
+    refreshRecordingList();
     
     // Sound button
     const soundBtn = document.getElementById('soundBtn');
@@ -1091,6 +1165,11 @@ function runMachine() {
     }
     Runner.run(runner, engine);
     
+    // Auto-start recording when running
+    if (!isRecording && !isReplaying) {
+        startRecording();
+    }
+    
     document.getElementById('runBtn').disabled = true;
 
     document.getElementById('pauseBtn').disabled = false;
@@ -1349,6 +1428,12 @@ function resetMachine() {
     if (!isRunning) return;
     
     playSound('ui'); // Play UI sound for reset action
+    
+    // Stop recording if active
+    if (isRecording) {
+        stopRecording();
+    }
+    
     // Stop the runner
     if (runner) {
         Runner.stop(runner);
@@ -1428,6 +1513,300 @@ function clearAll() {
     
     updateStatus('All objects cleared! Start building your machine.');
     updateObjectCounter();
+}
+
+/**
+ * Capture current frame state of all objects for recording
+ * @returns {Object} Frame data containing positions, angles, and velocities
+ */
+function captureFrame() {
+    const frame = {
+        timestamp: Date.now(),
+        objects: [],
+        npc: null
+    };
+    
+    // Capture all placed objects
+    placedObjects.forEach(obj => {
+        frame.objects.push({
+            id: obj.id,
+            position: { x: obj.position.x, y: obj.position.y },
+            angle: obj.angle,
+            velocity: { x: obj.velocity.x, y: obj.velocity.y },
+            angularVelocity: obj.angularVelocity
+        });
+    });
+    
+    // Capture NPC state
+    if (npc) {
+        const npcParts = Composite.allBodies(npc);
+        frame.npc = npcParts.map(part => ({
+            id: part.id,
+            position: { x: part.position.x, y: part.position.y },
+            angle: part.angle,
+            velocity: { x: part.velocity.x, y: part.velocity.y },
+            angularVelocity: part.angularVelocity
+        }));
+    }
+    
+    return frame;
+}
+
+/**
+ * Start recording simulation frames
+ */
+function startRecording() {
+    if (isReplaying) {
+        updateStatus('Cannot record during replay!');
+        return;
+    }
+    
+    isRecording = true;
+    recordedFrames = [];
+    updateStatus('🔴 Recording simulation...');
+    updateReplayButtons();
+}
+
+/**
+ * Stop recording simulation frames
+ */
+function stopRecording() {
+    isRecording = false;
+    updateStatus(`✅ Recording stopped. Captured ${recordedFrames.length} frames.`);
+    updateReplayButtons();
+}
+
+/**
+ * Start replaying recorded simulation
+ */
+function startReplay() {
+    if (recordedFrames.length === 0) {
+        updateStatus('No recording to replay! Run and record a simulation first.');
+        return;
+    }
+    
+    if (isRunning || isReplaying) {
+        updateStatus('Please reset the machine before replaying.');
+        return;
+    }
+    
+    playSound('ui');
+    isReplaying = true;
+    replayFrameIndex = 0;
+    
+    // Disable editing controls during replay
+    document.getElementById('runBtn').disabled = true;
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.disabled = true);
+    
+    updateStatus('▶️ Playing back recording...');
+    updateReplayButtons();
+    
+    // Create a custom runner for replay
+    if (!replayRunner) {
+        replayRunner = Runner.create({
+            isFixed: true,
+            delta: 1000 / 60  // 60 FPS
+        });
+    }
+    
+    // Use afterUpdate event to apply recorded frames
+    const replayHandler = () => {
+        if (!isReplaying || replayFrameIndex >= recordedFrames.length) {
+            stopReplay();
+            return;
+        }
+        
+        applyFrame(recordedFrames[replayFrameIndex]);
+        replayFrameIndex++;
+    };
+    
+    Events.on(replayRunner, 'afterUpdate', replayHandler);
+    Runner.run(replayRunner, engine);
+}
+
+/**
+ * Stop replaying and reset to original state
+ */
+function stopReplay() {
+    isReplaying = false;
+    replayFrameIndex = 0;
+    
+    if (replayRunner) {
+        Runner.stop(replayRunner);
+        Events.off(replayRunner, 'afterUpdate');
+    }
+    
+    // Re-enable editing controls
+    document.getElementById('runBtn').disabled = false;
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.disabled = false);
+    
+    updateStatus('⏹️ Replay stopped. Reset the machine to try again.');
+    updateReplayButtons();
+}
+
+/**
+ * Apply a recorded frame to all objects
+ * @param {Object} frame - Frame data to apply
+ */
+function applyFrame(frame) {
+    if (!frame) return;
+    
+    // Apply state to placed objects
+    frame.objects.forEach(objData => {
+        const obj = placedObjects.find(o => o.id === objData.id);
+        if (obj) {
+            Body.setPosition(obj, objData.position);
+            Body.setAngle(obj, objData.angle);
+            Body.setVelocity(obj, objData.velocity);
+            Body.setAngularVelocity(obj, objData.angularVelocity);
+        }
+    });
+    
+    // Apply state to NPC
+    if (frame.npc && npc) {
+        const npcParts = Composite.allBodies(npc);
+        frame.npc.forEach(partData => {
+            const part = npcParts.find(p => p.id === partData.id);
+            if (part) {
+                Body.setPosition(part, partData.position);
+                Body.setAngle(part, partData.angle);
+                Body.setVelocity(part, partData.velocity);
+                Body.setAngularVelocity(part, partData.angularVelocity);
+            }
+        });
+    }
+}
+
+/**
+ * Save recorded frames to localStorage
+ */
+function saveRecording(name) {
+    if (recordedFrames.length === 0) {
+        updateStatus('No recording to save!');
+        return;
+    }
+    
+    if (!name || name.trim() === '') {
+        updateStatus('Please enter a name for the recording.');
+        return;
+    }
+    
+    const recordingData = {
+        version: 1,
+        timestamp: Date.now(),
+        frameCount: recordedFrames.length,
+        frames: recordedFrames
+    };
+    
+    try {
+        localStorage.setItem(`doomberg_recording_${name}`, JSON.stringify(recordingData));
+        updateStatus(`✅ Recording "${name}" saved with ${recordedFrames.length} frames.`);
+        refreshRecordingList();
+    } catch (e) {
+        updateStatus('❌ Failed to save recording. Storage might be full.');
+        console.error('Save recording error:', e);
+    }
+}
+
+/**
+ * Load recorded frames from localStorage
+ */
+function loadRecording(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please select a recording to load.');
+        return;
+    }
+    
+    try {
+        const data = localStorage.getItem(`doomberg_recording_${name}`);
+        if (!data) {
+            updateStatus(`Recording "${name}" not found.`);
+            return;
+        }
+        
+        const recordingData = JSON.parse(data);
+        recordedFrames = recordingData.frames || [];
+        updateStatus(`✅ Loaded recording "${name}" with ${recordedFrames.length} frames.`);
+        updateReplayButtons();
+    } catch (e) {
+        updateStatus('❌ Failed to load recording.');
+        console.error('Load recording error:', e);
+    }
+}
+
+/**
+ * Delete a recording from localStorage
+ */
+function deleteRecording(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please select a recording to delete.');
+        return;
+    }
+    
+    try {
+        localStorage.removeItem(`doomberg_recording_${name}`);
+        updateStatus(`🗑️ Recording "${name}" deleted.`);
+        refreshRecordingList();
+    } catch (e) {
+        updateStatus('❌ Failed to delete recording.');
+        console.error('Delete recording error:', e);
+    }
+}
+
+/**
+ * Refresh the list of saved recordings
+ */
+function refreshRecordingList() {
+    const select = document.getElementById('recordingList');
+    if (!select) return;
+    
+    // Clear existing options except the first one
+    select.innerHTML = '<option value="">-- Select recording --</option>';
+    
+    // Get all recordings from localStorage
+    const recordings = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('doomberg_recording_')) {
+            const name = key.replace('doomberg_recording_', '');
+            recordings.push(name);
+        }
+    }
+    
+    // Sort alphabetically and add to select
+    recordings.sort().forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+}
+
+/**
+ * Update replay button states based on current state
+ */
+function updateReplayButtons() {
+    const recordBtn = document.getElementById('recordBtn');
+    const replayBtn = document.getElementById('replayBtn');
+    const stopReplayBtn = document.getElementById('stopReplayBtn');
+    
+    if (recordBtn) {
+        if (isReplaying) {
+            recordBtn.disabled = true;
+        } else {
+            recordBtn.disabled = false;
+            recordBtn.textContent = isRecording ? '⏺️ Recording...' : '⏺️ Record';
+            recordBtn.classList.toggle('active', isRecording);
+        }
+    }
+    
+    if (replayBtn) {
+        replayBtn.disabled = isReplaying || recordedFrames.length === 0;
+    }
+    
+    if (stopReplayBtn) {
+        stopReplayBtn.disabled = !isReplaying;
+    }
 }
 
 function updateStatus(message) {

@@ -53,6 +53,22 @@
             </div>
             
             <div class="control-group">
+                <h3>Replay/Recording</h3>
+                <div class="replay-controls">
+                    <button id="recordBtn" class="action-btn">⏺️ Record</button>
+                    <button id="replayBtn" class="action-btn" disabled>▶️ Replay</button>
+                    <button id="stopReplayBtn" class="action-btn" disabled>⏹️ Stop</button>
+                    <input type="text" id="recordingName" class="save-input" placeholder="Recording name..." maxlength="30">
+                    <button id="saveRecordingBtn" class="action-btn">💾 Save</button>
+                    <button id="loadRecordingBtn" class="action-btn">📂 Load</button>
+                    <select id="recordingList" class="saved-list">
+                        <option value="">-- Select recording --</option>
+                    </select>
+                    <button id="deleteRecordingBtn" class="action-btn">🗑️ Delete</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
                 <h3>Status</h3>
                 <div id="status">Ready to build!</div>
                 <div id="objectCounter" class="object-counter">Objects: 0</div>
