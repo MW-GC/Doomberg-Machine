@@ -402,6 +402,10 @@ function createSeesaw(x, y, seesawId = null) {
     });
     constraint.seesawId = seesawId;
     
+    // Store original constraint properties for reset
+    constraint.originalStiffness = constraint.stiffness;
+    constraint.originalLength = constraint.length;
+    
     // Add to world
     Composite.add(world, [pivot, plank, constraint]);
     placedObjects.push(pivot, plank);
@@ -630,6 +634,8 @@ function placeObject(type, x, y) {
             
         case 'seesaw':
             // Create seesaw using helper function
+            // createSeesaw already adds pivot, plank, and constraint to the world
+            // and tracks them in placedObjects / placedConstraints.
             const { pivot, plank, constraint } = createSeesaw(x, y);
             const seesawId = pivot.seesawId; // Get the generated ID
             
@@ -646,13 +652,6 @@ function placeObject(type, x, y) {
                 constraint: constraint
             });
             
-            // Store original constraint properties for reset
-            constraint.originalStiffness = constraint.stiffness;
-            constraint.originalLength = constraint.length;
-            
-            Composite.add(world, [pivot, plank, constraint]);
-            placedObjects.push(pivot, plank);
-            placedConstraints.push(constraint);
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
             updateObjectCounter();
             return;
