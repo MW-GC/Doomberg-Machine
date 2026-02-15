@@ -147,6 +147,173 @@ let collisionCount = 0;
 let currentScore = 0;
 let currentStars = 0;
 
+// Particle system
+let particles = [];
+let objectTrails = new Map(); // Map from body.id to position history array
+
+/**
+ * Create particles for visual effects
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {string} type - Type of particle effect: 'collision', 'explosion'
+ * @param {number} velocity - Optional velocity magnitude for collision particles
+ */
+function createParticles(x, y, type, velocity = 0) {
+    switch(type) {
+        case 'collision':
+            // Create sparks based on impact velocity
+            const sparkCount = Math.min(15, Math.floor(velocity * 3) + 5);
+            for (let i = 0; i < sparkCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3 + 1;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1, // Slight upward bias
+                    life: 30 + Math.random() * 20,
+                    maxLife: 30 + Math.random() * 20,
+                    size: Math.random() * 3 + 2,
+                    color: ['#FFD700', '#FFA500', '#FF6B6B'][Math.floor(Math.random() * 3)]
+                });
+            }
+            break;
+            
+        case 'explosion':
+            // Create radial explosion effect
+            const explosionParticles = 50;
+            for (let i = 0; i < explosionParticles; i++) {
+                const angle = (i / explosionParticles) * Math.PI * 2;
+                const speed = Math.random() * 6 + 3;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 60 + Math.random() * 30,
+                    maxLife: 60 + Math.random() * 30,
+                    size: Math.random() * 4 + 3,
+                    color: ['#FF0000', '#FF6B6B', '#FFA500', '#FFD700', '#000000'][i % 5]
+                });
+            }
+            break;
+    }
+}
+
+/**
+ * Update all particles (movement, fading, removal)
+ */
+function updateParticles() {
+    particles = particles.filter(p => {
+        // Update position
+        p.x += p.vx;
+        p.y += p.vy;
+        
+        // Apply gravity
+        p.vy += 0.15;
+        
+        // Apply air resistance
+        p.vx *= 0.98;
+        p.vy *= 0.98;
+        
+        // Decrease life
+        p.life--;
+        
+        // Remove dead particles
+        return p.life > 0;
+    });
+}
+
+/**
+ * Draw all particles on canvas
+ * @param {CanvasRenderingContext2D} context
+ */
+function drawParticles(context) {
+    particles.forEach(p => {
+        context.save();
+        
+        // Calculate alpha based on remaining life
+        const alpha = p.life / p.maxLife;
+        context.globalAlpha = alpha;
+        
+        // Draw particle
+        context.fillStyle = p.color;
+        context.beginPath();
+        context.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        context.fill();
+        
+        context.restore();
+    });
+}
+
+/**
+ * Update object trails for moving objects
+ */
+function updateObjectTrails() {
+    if (!isRunning) {
+        // Clear trails when not running
+        objectTrails.clear();
+        return;
+    }
+    
+    placedObjects.forEach(body => {
+        // Only track trails for non-static, fast-moving objects
+        const speed = Math.sqrt(body.velocity.x ** 2 + body.velocity.y ** 2);
+        if (!body.isStatic && speed > 1) {
+            if (!objectTrails.has(body.id)) {
+                objectTrails.set(body.id, []);
+            }
+            
+            const trail = objectTrails.get(body.id);
+            trail.push({ x: body.position.x, y: body.position.y, alpha: 1 });
+            
+            // Keep only last 15 positions
+            if (trail.length > 15) {
+                trail.shift();
+            }
+        }
+    });
+    
+    // Fade and clean up trails
+    objectTrails.forEach((trail, bodyId) => {
+        for (let i = 0; i < trail.length; i++) {
+            trail[i].alpha -= 0.05;
+        }
+        // Remove faded points
+        while (trail.length > 0 && trail[0].alpha <= 0) {
+            trail.shift();
+        }
+        // Remove empty trails
+        if (trail.length === 0) {
+            objectTrails.delete(bodyId);
+        }
+    });
+}
+
+/**
+ * Draw object trails on canvas
+ * @param {CanvasRenderingContext2D} context
+ */
+function drawObjectTrails(context) {
+    objectTrails.forEach(trail => {
+        if (trail.length < 2) return;
+        
+        context.save();
+        context.strokeStyle = '#667eea';
+        context.lineWidth = 3;
+        context.lineCap = 'round';
+        context.lineJoin = 'round';
+        
+        for (let i = 1; i < trail.length; i++) {
+            context.globalAlpha = trail[i].alpha * 0.5;
+            context.beginPath();
+            context.moveTo(trail[i-1].x, trail[i-1].y);
+            context.lineTo(trail[i].x, trail[i].y);
+            context.stroke();
+        }
+        
+        context.restore();
+    });
+}
+
 /**
  * Apply explosion force to all nearby objects from an explosion center
  * @param {number} explosionX - X coordinate of explosion center
@@ -385,6 +552,9 @@ function init() {
                     // Mark as detonated immediately to prevent multiple detonations
                     explosiveBody.hasDetonated = true;
                     
+                    // Create explosion particle effect
+                    createParticles(explosiveBody.position.x, explosiveBody.position.y, 'explosion');
+                    
                     // Apply explosion force to nearby objects (excluding the explosive itself)
                     applyExplosionForce(explosiveBody.position.x, explosiveBody.position.y, 150, 0.08, explosiveBody);
                     
@@ -414,7 +584,7 @@ function init() {
                 }
             }
             
-            // Play general collision sounds for significant impacts during gameplay
+            // Play general collision sounds and create particles for significant impacts during gameplay
             // (rate-limited to avoid audio spam)
             if (isRunning) {
                 const now = Date.now();
@@ -430,20 +600,36 @@ function init() {
                     const dy = bodyA.velocity.y - bodyB.velocity.y;
                     const relativeVelocity = Math.sqrt(dx * dx + dy * dy);
                     
-                    // Play collision sound for impacts above a minimum threshold
+                    // Play collision sound and create particles for impacts above a minimum threshold
                     const COLLISION_SOUND_THRESHOLD = 1.5;
                     if (relativeVelocity > COLLISION_SOUND_THRESHOLD) {
                         playSound('collision');
                         lastCollisionSoundTime = now;
+                        
+                        // Create collision spark particles at impact point
+                        const collisionX = (bodyA.position.x + bodyB.position.x) / 2;
+                        const collisionY = (bodyA.position.y + bodyB.position.y) / 2;
+                        createParticles(collisionX, collisionY, 'collision', relativeVelocity);
                     }
                 }
             }
         });
     });
     
-    // Draw grid overlay after each render
+    // Draw grid overlay, trails, and particles after each render
     Events.on(render, 'afterRender', () => {
-        drawGrid(render.context);
+        const context = render.context;
+        
+        // Update and draw trails (behind particles)
+        updateObjectTrails();
+        drawObjectTrails(context);
+        
+        // Draw grid overlay
+        drawGrid(context);
+        
+        // Update and draw particles (on top of everything)
+        updateParticles();
+        drawParticles(context);
     });
     
     // Start render after all bodies are created; runner will be started in runMachine()
@@ -1203,6 +1389,10 @@ function toggleGrid() {
 
 function doomNPC() {
     playSound('doom'); // Play doom sound
+    
+    // Create doom explosion particle effect
+    createParticles(npc.position.x, npc.position.y, 'explosion');
+    
     const doomStatus = document.getElementById('doomStatus');
     doomStatus.textContent = 'NPC Status: DOOMED! 💀☠️';
     doomStatus.classList.add('doomed');
