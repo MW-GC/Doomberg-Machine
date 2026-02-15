@@ -16,6 +16,12 @@ const GROUND_HEIGHT = 20;
 const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
 
+// Physics constants
+const POSITION_ITERATIONS = 10; // Increased from default 6 to reduce tunneling
+const VELOCITY_ITERATIONS = 6;  // Increased from default 4 to reduce tunneling
+const DOOM_VELOCITY_THRESHOLD = 2; // Minimum velocity to doom NPC
+const MAX_OBJECTS = 100; // Maximum number of objects allowed for performance
+
 /**
  * Normalize an angle in radians to the range [0, 2π).
  * @param {number} angle
@@ -51,10 +57,14 @@ let currentRampAngle = DEFAULT_RAMP_ANGLE;
 function init() {
     canvas = document.getElementById('gameCanvas');
     
-    // Create engine
+    // Create engine with improved iteration settings to prevent tunneling
     engine = Engine.create();
     world = engine.world;
     world.gravity.y = 1;
+    
+    // Increase iterations to prevent fast objects from tunneling through static bodies
+    engine.positionIterations = POSITION_ITERATIONS;
+    engine.velocityIterations = VELOCITY_ITERATIONS;
     
     // Create renderer
     render = Render.create({
@@ -111,7 +121,7 @@ function init() {
                 const otherBody = pair.bodyA.label === 'npc' ? pair.bodyB : pair.bodyA;
                 const velocity = Math.abs(otherBody.velocity.x) + Math.abs(otherBody.velocity.y);
                 
-                if (velocity > 2) {
+                if (velocity > DOOM_VELOCITY_THRESHOLD) {
                     npcDoomed = true;
                     doomNPC();
                 }
@@ -243,6 +253,13 @@ function rotateRamp(angleChange) {
 }
 
 function placeObject(type, x, y) {
+    // Check if we've reached the maximum object limit
+    if (placedObjects.length >= MAX_OBJECTS) {
+        updateStatus(`Maximum object limit (${MAX_OBJECTS}) reached! Please remove some objects first.`);
+        alert(`Maximum object limit (${MAX_OBJECTS}) reached!\n\nFor optimal performance, please clear some objects before adding more.`);
+        return;
+    }
+    
     let body;
     
     switch(type) {
@@ -324,6 +341,10 @@ function placeObject(type, x, y) {
                 stiffness: 0.9
             });
             
+            // Store original constraint properties for reset
+            constraint.originalStiffness = constraint.stiffness;
+            constraint.originalLength = constraint.length;
+            
             Composite.add(world, [pivot, plank, constraint]);
             placedObjects.push(pivot, plank);
             placedConstraints.push(constraint);
@@ -395,6 +416,16 @@ function resetMachine() {
             Body.setVelocity(obj, { x: 0, y: 0 });
             Body.setAngularVelocity(obj, 0);
             Body.setAngle(obj, obj.originalAngle || 0);
+        }
+    });
+    
+    // Reset all constraints to their original properties
+    placedConstraints.forEach(constraint => {
+        if (constraint.originalStiffness !== undefined) {
+            constraint.stiffness = constraint.originalStiffness;
+        }
+        if (constraint.originalLength !== undefined) {
+            constraint.length = constraint.originalLength;
         }
     });
     
