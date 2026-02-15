@@ -1538,9 +1538,8 @@ function captureFrame() {
     });
     
     // Capture NPC state
-    if (npc) {
-        const npcParts = Composite.allBodies(npc);
-        frame.npc = npcParts.map(part => ({
+    if (npc && npc.parts) {
+        frame.npc = npc.parts.map(part => ({
             id: part.id,
             position: { x: part.position.x, y: part.position.y },
             angle: part.angle,
@@ -1663,10 +1662,9 @@ function applyFrame(frame) {
     });
     
     // Apply state to NPC
-    if (frame.npc && npc) {
-        const npcParts = Composite.allBodies(npc);
+    if (frame.npc && npc && npc.parts) {
         frame.npc.forEach(partData => {
-            const part = npcParts.find(p => p.id === partData.id);
+            const part = npc.parts.find(p => p.id === partData.id);
             if (part) {
                 Body.setPosition(part, partData.position);
                 Body.setAngle(part, partData.angle);
