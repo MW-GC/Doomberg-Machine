@@ -35,12 +35,13 @@ All completed features are documented in detail in [technical.md](technical.md) 
 
 | Feature | Description | Details |
 |---------|-------------|---------|
-| **Save/Load System** | LocalStorage-based contraption saving with custom names | [technical.md](technical.md#9-saveload-system) |
+| **Save/Load System** | LocalStorage-based contraption saving with custom names | [technical.md](technical.md#10-saveload-system) |
 | **Spring Object** | Super-bouncy object with 1.5 restitution coefficient | [gameplay.md](gameplay.md#available-objects) |
 | **Explosive Object** | Collision-triggered explosive with radial force | [gameplay.md](gameplay.md#available-objects) |
 | **Scoring System** | Score based on efficiency, speed, variety with star ratings | [gameplay.md](gameplay.md#scoring-system) |
 | **Grid/Snap Toggle** | Optional 40px grid overlay with snap-to-grid placement | [gameplay.md](gameplay.md#controls-reference) |
 | **Sound Effects** | Web Audio API oscillator synthesis for game actions | [technical.md](technical.md#8-sound-system) |
+| **Particle Effects** | Visual effects for collisions, explosions, and motion trails | [technical.md](technical.md#10-particle-system) |
 
 ---
 
@@ -268,54 +269,6 @@ function playback() {
 ### 🎭 Polish & UX Features
 
 These features would add polish and improve the overall user experience.
-
-#### 9. Particle Effects
-**Priority**: Low  
-**Effort**: Medium  
-**Value**: Medium
-
-**Effect Types**:
-
-**Collision Sparks**:
-```javascript
-function createCollisionParticles(x, y, velocity) {
-    for (let i = 0; i < 10; i++) {
-        particles.push({
-            x, y,
-            vx: Math.random() * 4 - 2,
-            vy: Math.random() * 4 - 2,
-            life: 30,
-            color: '#FFD700'
-        });
-    }
-}
-```
-
-**Doom Explosion**:
-```javascript
-function doomExplosion() {
-    for (let i = 0; i < 50; i++) {
-        particles.push({
-            x: npc.position.x,
-            y: npc.position.y,
-            vx: Math.cos(i * Math.PI * 2 / 50) * 5,
-            vy: Math.sin(i * Math.PI * 2 / 50) * 5,
-            life: 60,
-            color: ['#FF0000', '#FF6B6B', '#000000'][i % 3]
-        });
-    }
-}
-```
-
-**Trails**:
-```javascript
-function drawTrail(body) {
-    // Keep history of last 10 positions
-    // Draw fading line between them
-}
-```
-
----
 
 #### 10. Theme System
 **Priority**: Low  
