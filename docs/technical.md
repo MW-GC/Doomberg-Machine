@@ -342,6 +342,107 @@ function playSound(type) {
 - Loaded during initialization via `loadSoundPreference()`
 - Toggle button updates with mute icon (🔇) when disabled
 
+### 9. Particle System
+
+**Overview**:
+The particle system provides visual polish and excitement through dynamic particle effects for collisions, explosions, and motion trails. All particles are rendered using the HTML5 Canvas API with alpha blending for smooth fading effects.
+
+**Particle Data Structure**:
+```javascript
+{
+    x: number,           // X position
+    y: number,           // Y position
+    vx: number,          // X velocity
+    vy: number,          // Y velocity
+    life: number,        // Remaining life (frames)
+    maxLife: number,     // Initial life for alpha calculation
+    size: number,        // Particle size (radius)
+    color: string        // Particle color (CSS color)
+}
+```
+
+**Effect Types**:
+
+1. **Collision Sparks**
+   - Triggered on significant collisions (relative velocity > 1.5)
+   - Particle count scales with impact velocity (5-15 particles)
+   - Random radial spray with slight upward bias
+   - Colors: Gold (#FFD700), Orange (#FFA500), Red (#FF6B6B)
+   - Lifespan: 30-50 frames (~0.5-0.8 seconds at 60 FPS)
+
+2. **Explosion Particles**
+   - Generated on explosive detonation and NPC doom
+   - 50 particles in perfect radial pattern
+   - Colors: Red (#FF0000), Light Red (#FF6B6B), Orange (#FFA500), Gold (#FFD700), Black (#000000)
+   - Higher initial velocity (3-9 units) for dramatic effect
+   - Lifespan: 60-90 frames (~1-1.5 seconds at 60 FPS)
+
+3. **Motion Trails**
+   - Tracked for non-static bodies moving faster than 1 unit/frame
+   - Stores last 15 positions per object
+   - Rendered as connected line segments with fading alpha
+   - Color: Theme purple (#667eea) at 50% opacity
+   - Auto-cleared when simulation stops
+
+**Implementation**:
+```javascript
+// Particle array
+let particles = [];
+
+// Create particles
+function createParticles(x, y, type, velocity) {
+    // Generates particles based on type
+}
+
+// Update particles (called every frame)
+function updateParticles() {
+    particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15;  // Gravity
+        p.vx *= 0.98;  // Air resistance
+        p.vy *= 0.98;
+        p.life--;
+        return p.life > 0;
+    });
+}
+
+// Draw particles with alpha blending
+function drawParticles(context) {
+    particles.forEach(p => {
+        context.globalAlpha = p.life / p.maxLife;
+        // Draw circle at (p.x, p.y)
+    });
+}
+```
+
+**Trail System**:
+```javascript
+let objectTrails = new Map(); // body.id -> [{x, y, alpha}, ...]
+
+function updateObjectTrails() {
+    // Track positions of fast-moving objects
+    // Fade existing trail points
+    // Clean up empty trails
+}
+```
+
+**Performance**:
+- Particles automatically removed when life reaches 0
+- Trails limited to 15 positions per object
+- Only fast-moving objects (speed > 1) generate trails
+- Trails cleared when simulation stops
+- Typical particle count: 0-150 particles during active gameplay
+- Negligible performance impact on 60 FPS target
+
+**Integration Points**:
+- Collision detection → `createParticles(x, y, 'collision', velocity)`
+- Explosive detonation → `createParticles(x, y, 'explosion')`
+- NPC doom → `createParticles(npc.position.x, npc.position.y, 'explosion')`
+- Render loop → `updateParticles()` and `drawParticles()`
+
+### 10. Save/Load System
+
 ## ⚙️ Physics Engine
 
 ### Matter.js Integration
@@ -400,7 +501,7 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
   ```
 - This ensures NPC feet are placed at ground level (y=580) when created, preventing the NPC from falling through the ground when made dynamic
 
-### 9. Save/Load System
+### 10. Save/Load System
 
 **Architecture**:
 - Uses browser localStorage for persistent storage
