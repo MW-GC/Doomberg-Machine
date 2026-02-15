@@ -435,6 +435,10 @@ function updateStatus(message) {
     document.getElementById('status').textContent = message;
 }
 
+/**
+ * Update the object counter display to show the current number of placed objects.
+ * Note: Seesaws count as 2 objects since they consist of both a pivot and plank body.
+ */
 function updateObjectCounter() {
     document.getElementById('objectCounter').textContent = `Objects: ${placedObjects.length}`;
 }
