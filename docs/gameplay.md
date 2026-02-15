@@ -83,23 +83,23 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
    - Objects appear at your click location (or snapped to grid if enabled)
    - You can place up to 100 objects for optimal performance
 
-5. **Build Your Machine**
+6. **Build Your Machine**
    - Combine different objects strategically
    - Think about gravity, momentum, and chain reactions
    - The NPC is positioned on the right side - plan your trajectory!
    - Use the grid for precise alignment and professional-looking contraptions
 
-6. **Run the Simulation**
+7. **Run the Simulation**
    - Click the green **▶️ Run Machine** button
    - Physics activates and your contraption comes to life
    - Watch as objects interact and (hopefully) doom the NPC
 
-6. **Check Success**
+8. **Check Success**
    - If an object hits the NPC with sufficient velocity, doom is achieved!
    - NPC Status changes to "DOOMED! 💀☠️"
    - NPC turns black to indicate successful doom
 
-7. **Reset or Clear**
+9. **Reset or Clear**
    - **🔄 Reset**: Restores all objects to their starting positions (only works while machine is running)
    - **🗑️ Clear All**: Removes all placed objects to start fresh
 
