@@ -75,21 +75,21 @@ function drawGrid(context) {
     context.strokeStyle = GRID_LINE_COLOR;
     context.lineWidth = 1;
     
+    context.beginPath();
+    
     // Draw vertical lines
     for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
-        context.beginPath();
         context.moveTo(x, 0);
         context.lineTo(x, CANVAS_HEIGHT);
-        context.stroke();
     }
     
     // Draw horizontal lines
     for (let y = 0; y <= CANVAS_HEIGHT; y += GRID_SIZE) {
-        context.beginPath();
         context.moveTo(0, y);
         context.lineTo(CANVAS_WIDTH, y);
-        context.stroke();
     }
+
+    context.stroke();
 }
 
 const DEFAULT_RAMP_ANGLE = normalizeAngle(-17 * Math.PI / 180); // -17 degrees, normalized to [0, 2π)
