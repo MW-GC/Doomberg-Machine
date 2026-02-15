@@ -96,6 +96,49 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
    - **🔄 Reset**: Restores all objects to their starting positions (only works while machine is running)
    - **🗑️ Clear All**: Removes all placed objects to start fresh
 
+9. **Save Your Design**
+   - Type a name in the "Design name..." field
+   - Click **💾 Save** or press `Enter` to save
+   - Your contraption is saved to browser storage
+   - Save as many designs as you want!
+
+10. **Load a Saved Design**
+    - Select a saved design from the dropdown list
+    - Click **📂 Load** to restore it
+    - All objects return to their saved positions
+    - Continue building or run immediately!
+
+11. **Delete Saved Designs**
+    - Select the design you want to remove
+    - Click **🗑️ Delete** button
+    - Confirm the deletion in the dialog
+    - The design is permanently removed from storage
+
+## 💾 Save/Load System
+
+The game includes a complete save/load system that stores your contraptions in your browser's localStorage:
+
+### Features
+- **Persistent Storage**: Designs are saved even after closing the browser
+- **Named Saves**: Give each design a descriptive name (up to 30 characters)
+- **Automatic List**: All saved designs appear in the dropdown menu
+- **Complex Objects**: Properly saves and restores seesaws, ramps with rotation, and all object types
+- **Quick Access**: Quickly switch between different machine designs
+- **Multiple Saves**: Save as many different contraptions as you want
+
+### Use Cases
+- **Iterate on Designs**: Save work-in-progress and come back later
+- **Share Locations**: Note down a design name to tell friends which contraption to try
+- **Competition**: Save your record-breaking minimalist solutions
+- **Collections**: Build a library of your favorite machines
+- **Learning**: Save examples of different physics techniques
+
+### Tips
+- Use descriptive names like "3-Ball Cascade" or "Seesaw Launch v2"
+- Regularly save your work before making big changes
+- Delete old designs you no longer need to keep the list manageable
+- Designs include exact positions and angles of all objects
+
 ## 💡 Strategy Tips
 
 ### For Beginners
@@ -132,6 +175,11 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 | Slow Motion Toggle | Click "🐌 Slow-Mo" |
 | Reset Positions | Click "🔄 Reset" |
 | Clear All | Click "🗑️ Clear All" |
+| Undo | `Ctrl+Z` or Click "↶ Undo" |
+| Redo | `Ctrl+Y` or `Ctrl+Shift+Z` or Click "↷ Redo" |
+| Save Design | Type name and click "💾 Save" or press `Enter` |
+| Load Design | Select from dropdown and click "📂 Load" |
+| Delete Saved Design | Select from dropdown and click "🗑️ Delete" |
 
 ## ❓ Frequently Asked Questions
 
@@ -149,6 +197,18 @@ A: When you have the ramp tool selected, press Q or E to rotate, and the current
 
 **Q: Can objects go off-screen?**  
 A: No - the game has invisible walls on the left and right sides to keep everything in play.
+
+**Q: Where are my saved designs stored?**  
+A: Designs are stored in your browser's localStorage. They persist across sessions but are specific to your browser on this device. Clearing browser data will delete saved designs.
+
+**Q: Can I share my contraptions with others?**  
+A: Currently, designs are saved locally. You can tell others the name of your save and describe the machine, but there's no export/import feature yet (planned for future updates).
+
+**Q: Is there a limit to how many designs I can save?**  
+A: Browser localStorage typically allows 5-10MB. Each contraption is small (a few KB), so you can save hundreds of designs before running into limits.
+
+**Q: What happens if I save with the same name twice?**  
+A: The new save will overwrite the old one. Use unique names or add version numbers (e.g., "Machine v1", "Machine v2") to keep multiple iterations.
 
 **Q: How do I use pause and slow-motion?**  
 A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.
