@@ -18,7 +18,13 @@ const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
 const MAX_HISTORY_SIZE = 50; // Maximum undo/redo history entries to prevent memory leaks
 const GRID_SIZE = 40; // Grid cell size in pixels
-const GRID_LINE_COLOR = 'rgba(0, 0, 0, 0.1)'; // Subtle gray grid lines
+
+/**
+ * Get current grid color from theme
+ */
+function getGridColor() {
+    return THEMES[currentTheme].gridColor;
+}
 
 // Object labels
 const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
@@ -34,6 +40,281 @@ const MAX_SAVE_NAME_LENGTH = 30; // Maximum characters for save design names
 // Object type detection thresholds (used in getObjectType for serialization)
 const PLATFORM_MIN_WIDTH = 140; // Platforms are wider than ramps (150 vs 120)
 const DOMINO_MIN_HEIGHT = 50; // Dominoes are taller than boxes (60 vs 40)
+
+// Theme System
+const THEMES = {
+    classic: {
+        name: 'Classic',
+        // CSS variables
+        bodyBg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        headerBg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+        controlsBg: '#f8f9fa',
+        containerBg: 'white',
+        borderColor: '#dee2e6',
+        textPrimary: '#495057',
+        textSecondary: '#666',
+        buttonBg: 'white',
+        buttonHover: '#667eea',
+        runBtnBg: '#28a745',
+        runBtnHover: '#218838',
+        activeBtnBg: '#ffc107',
+        statusBg: '#e9ecef',
+        aliveStatusBg: '#d4edda',
+        aliveStatusColor: '#155724',
+        aliveStatusBorder: '#c3e6cb',
+        doomedStatusBg: '#f8d7da',
+        doomedStatusColor: '#721c24',
+        doomedStatusBorder: '#f5c6cb',
+        canvasBorder: '#495057',
+        focusOutline: '#4CAF50',
+        modalOverlay: 'rgba(0, 0, 0, 0.8)',
+        scoreGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        // Canvas/game colors
+        canvasBg: '#87CEEB',
+        groundColor: '#8B4513',
+        wallColor: '#696969',
+        gridColor: 'rgba(0, 0, 0, 0.1)',
+        // Object colors
+        ballColor: '#FF6B6B',
+        boxColor: '#A0522D',
+        dominoColor: '#4ECDC4',
+        rampColor: '#95E1D3',
+        platformColor: '#F38181',
+        springColor: '#9B59B6',
+        explosiveColor: '#E74C3C',
+        explosiveActiveColor: '#FFA500',
+        seesawPivotColor: '#AA8976',
+        seesawPlankColor: '#EAAC8B',
+        // NPC colors
+        npcBodyColor: '#FF0000',
+        npcLimbColor: '#FFB6C1',
+        npcFootColor: '#0000FF',
+        // Particle color
+        particleColor: '#000000'
+    },
+    dark: {
+        name: 'Dark',
+        bodyBg: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+        headerBg: 'linear-gradient(135deg, #0f3460 0%, #533483 100%)',
+        controlsBg: '#1a1a2e',
+        containerBg: '#16213e',
+        borderColor: '#2a2a3e',
+        textPrimary: '#e0e0e0',
+        textSecondary: '#b0b0b0',
+        buttonBg: '#2a2a3e',
+        buttonHover: '#533483',
+        runBtnBg: '#2d6a4f',
+        runBtnHover: '#1b4332',
+        activeBtnBg: '#e85d04',
+        statusBg: '#2a2a3e',
+        aliveStatusBg: '#1b4332',
+        aliveStatusColor: '#95d5b2',
+        aliveStatusBorder: '#2d6a4f',
+        doomedStatusBg: '#641220',
+        doomedStatusColor: '#ffb3c1',
+        doomedStatusBorder: '#ae2012',
+        canvasBorder: '#533483',
+        focusOutline: '#95d5b2',
+        modalOverlay: 'rgba(0, 0, 0, 0.9)',
+        scoreGradient: 'linear-gradient(135deg, #0f3460 0%, #533483 100%)',
+        canvasBg: '#0d1b2a',
+        groundColor: '#415a77',
+        wallColor: '#778da9',
+        gridColor: 'rgba(255, 255, 255, 0.1)',
+        ballColor: '#e63946',
+        boxColor: '#a8dadc',
+        dominoColor: '#457b9d',
+        rampColor: '#1d3557',
+        platformColor: '#f1faee',
+        springColor: '#9d4edd',
+        explosiveColor: '#ff006e',
+        explosiveActiveColor: '#ffbe0b',
+        seesawPivotColor: '#a8dadc',
+        seesawPlankColor: '#e63946',
+        npcBodyColor: '#e63946',
+        npcLimbColor: '#ffb3c1',
+        npcFootColor: '#457b9d',
+        particleColor: '#f1faee'
+    },
+    neon: {
+        name: 'Neon',
+        bodyBg: 'linear-gradient(135deg, #0a0a0a 0%, #1a0033 100%)',
+        headerBg: 'linear-gradient(135deg, #ff00ff 0%, #00ffff 100%)',
+        controlsBg: '#1a0033',
+        containerBg: '#0a0a0a',
+        borderColor: '#ff00ff',
+        textPrimary: '#00ffff',
+        textSecondary: '#ff00ff',
+        buttonBg: '#1a0033',
+        buttonHover: '#ff00ff',
+        runBtnBg: '#00ff00',
+        runBtnHover: '#00cc00',
+        activeBtnBg: '#ffff00',
+        statusBg: '#1a0033',
+        aliveStatusBg: '#003300',
+        aliveStatusColor: '#00ff00',
+        aliveStatusBorder: '#00ff00',
+        doomedStatusBg: '#330000',
+        doomedStatusColor: '#ff0000',
+        doomedStatusBorder: '#ff0000',
+        canvasBorder: '#ff00ff',
+        focusOutline: '#00ffff',
+        modalOverlay: 'rgba(0, 0, 0, 0.95)',
+        scoreGradient: 'linear-gradient(135deg, #ff00ff 0%, #00ffff 100%)',
+        canvasBg: '#000033',
+        groundColor: '#ff00ff',
+        wallColor: '#00ffff',
+        gridColor: 'rgba(255, 0, 255, 0.2)',
+        ballColor: '#ff00ff',
+        boxColor: '#00ffff',
+        dominoColor: '#ffff00',
+        rampColor: '#00ff00',
+        platformColor: '#ff0080',
+        springColor: '#8000ff',
+        explosiveColor: '#ff0000',
+        explosiveActiveColor: '#ffff00',
+        seesawPivotColor: '#00ffff',
+        seesawPlankColor: '#ff00ff',
+        npcBodyColor: '#ff0080',
+        npcLimbColor: '#ff00ff',
+        npcFootColor: '#00ffff',
+        particleColor: '#ffffff'
+    },
+    retro: {
+        name: 'Retro',
+        bodyBg: 'linear-gradient(135deg, #ffcdb2 0%, #ffb4a2 100%)',
+        headerBg: 'linear-gradient(135deg, #e5989b 0%, #b5838d 100%)',
+        controlsBg: '#fec89a',
+        containerBg: '#fff5e4',
+        borderColor: '#e5989b',
+        textPrimary: '#6d6875',
+        textSecondary: '#b5838d',
+        buttonBg: '#ffd7ba',
+        buttonHover: '#ffb4a2',
+        runBtnBg: '#e5989b',
+        runBtnHover: '#b5838d',
+        activeBtnBg: '#fec89a',
+        statusBg: '#ffd7ba',
+        aliveStatusBg: '#e5989b',
+        aliveStatusColor: '#6d6875',
+        aliveStatusBorder: '#b5838d',
+        doomedStatusBg: '#b5838d',
+        doomedStatusColor: '#fff5e4',
+        doomedStatusBorder: '#6d6875',
+        canvasBorder: '#b5838d',
+        focusOutline: '#e5989b',
+        modalOverlay: 'rgba(109, 104, 117, 0.8)',
+        scoreGradient: 'linear-gradient(135deg, #e5989b 0%, #b5838d 100%)',
+        canvasBg: '#fec89a',
+        groundColor: '#e5989b',
+        wallColor: '#b5838d',
+        gridColor: 'rgba(109, 104, 117, 0.2)',
+        ballColor: '#ff6d00',
+        boxColor: '#ffb700',
+        dominoColor: '#c1121f',
+        rampColor: '#669bbc',
+        platformColor: '#003049',
+        springColor: '#780000',
+        explosiveColor: '#c1121f',
+        explosiveActiveColor: '#ff6d00',
+        seesawPivotColor: '#e5989b',
+        seesawPlankColor: '#b5838d',
+        npcBodyColor: '#c1121f',
+        npcLimbColor: '#fec89a',
+        npcFootColor: '#669bbc',
+        particleColor: '#6d6875'
+    },
+    minimalist: {
+        name: 'Minimalist',
+        bodyBg: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+        headerBg: 'linear-gradient(135deg, #495057 0%, #343a40 100%)',
+        controlsBg: '#ffffff',
+        containerBg: '#ffffff',
+        borderColor: '#dee2e6',
+        textPrimary: '#212529',
+        textSecondary: '#6c757d',
+        buttonBg: '#ffffff',
+        buttonHover: '#e9ecef',
+        runBtnBg: '#212529',
+        runBtnHover: '#000000',
+        activeBtnBg: '#6c757d',
+        statusBg: '#f8f9fa',
+        aliveStatusBg: '#e9ecef',
+        aliveStatusColor: '#212529',
+        aliveStatusBorder: '#dee2e6',
+        doomedStatusBg: '#212529',
+        doomedStatusColor: '#ffffff',
+        doomedStatusBorder: '#000000',
+        canvasBorder: '#212529',
+        focusOutline: '#495057',
+        modalOverlay: 'rgba(33, 37, 41, 0.8)',
+        scoreGradient: 'linear-gradient(135deg, #495057 0%, #343a40 100%)',
+        canvasBg: '#ffffff',
+        groundColor: '#212529',
+        wallColor: '#495057',
+        gridColor: 'rgba(0, 0, 0, 0.1)',
+        ballColor: '#343a40',
+        boxColor: '#6c757d',
+        dominoColor: '#adb5bd',
+        rampColor: '#ced4da',
+        platformColor: '#dee2e6',
+        springColor: '#495057',
+        explosiveColor: '#212529',
+        explosiveActiveColor: '#000000',
+        seesawPivotColor: '#6c757d',
+        seesawPlankColor: '#adb5bd',
+        npcBodyColor: '#212529',
+        npcLimbColor: '#6c757d',
+        npcFootColor: '#495057',
+        particleColor: '#212529'
+    },
+    holiday: {
+        name: 'Holiday',
+        bodyBg: 'linear-gradient(135deg, #165b33 0%, #78290f 100%)',
+        headerBg: 'linear-gradient(135deg, #bb2528 0%, #146b3a 100%)',
+        controlsBg: '#f8f0dd',
+        containerBg: '#fff5e4',
+        borderColor: '#bb2528',
+        textPrimary: '#165b33',
+        textSecondary: '#78290f',
+        buttonBg: '#f8f0dd',
+        buttonHover: '#bb2528',
+        runBtnBg: '#146b3a',
+        runBtnHover: '#165b33',
+        activeBtnBg: '#f0c808',
+        statusBg: '#f8f0dd',
+        aliveStatusBg: '#d4edda',
+        aliveStatusColor: '#146b3a',
+        aliveStatusBorder: '#165b33',
+        doomedStatusBg: '#f8d7da',
+        doomedStatusColor: '#78290f',
+        doomedStatusBorder: '#bb2528',
+        canvasBorder: '#bb2528',
+        focusOutline: '#f0c808',
+        modalOverlay: 'rgba(22, 91, 51, 0.8)',
+        scoreGradient: 'linear-gradient(135deg, #bb2528 0%, #146b3a 100%)',
+        canvasBg: '#d4edda',
+        groundColor: '#78290f',
+        wallColor: '#bb2528',
+        gridColor: 'rgba(22, 91, 51, 0.15)',
+        ballColor: '#bb2528',
+        boxColor: '#146b3a',
+        dominoColor: '#f0c808',
+        rampColor: '#ffffff',
+        platformColor: '#165b33',
+        springColor: '#bb2528',
+        explosiveColor: '#78290f',
+        explosiveActiveColor: '#f0c808',
+        seesawPivotColor: '#bb2528',
+        seesawPlankColor: '#f0c808',
+        npcBodyColor: '#bb2528',
+        npcLimbColor: '#f8f0dd',
+        npcFootColor: '#165b33',
+        particleColor: '#f0c808'
+    }
+};
+
+let currentTheme = 'classic';
 
 /**
  * Normalize an angle in radians to the range [0, 2π).
@@ -72,7 +353,7 @@ function snapToGrid(x, y) {
 function drawGrid(context) {
     if (!isGridEnabled) return;
     
-    context.strokeStyle = GRID_LINE_COLOR;
+    context.strokeStyle = getGridColor();
     context.lineWidth = 1;
     
     context.beginPath();
@@ -295,6 +576,166 @@ function loadSoundPreference() {
     updateSoundButton();
 }
 
+/**
+ * Apply theme to UI and game elements
+ * @param {string} themeName - Name of the theme to apply
+ */
+function applyTheme(themeName) {
+    if (!THEMES[themeName]) {
+        console.warn(`Theme "${themeName}" not found, using classic`);
+        themeName = 'classic';
+    }
+    
+    currentTheme = themeName;
+    const theme = THEMES[themeName];
+    
+    // Apply CSS custom properties to root
+    const root = document.documentElement;
+    root.style.setProperty('--body-bg', theme.bodyBg);
+    root.style.setProperty('--header-bg', theme.headerBg);
+    root.style.setProperty('--controls-bg', theme.controlsBg);
+    root.style.setProperty('--container-bg', theme.containerBg);
+    root.style.setProperty('--border-color', theme.borderColor);
+    root.style.setProperty('--text-primary', theme.textPrimary);
+    root.style.setProperty('--text-secondary', theme.textSecondary);
+    root.style.setProperty('--button-bg', theme.buttonBg);
+    root.style.setProperty('--button-hover', theme.buttonHover);
+    root.style.setProperty('--run-btn-bg', theme.runBtnBg);
+    root.style.setProperty('--run-btn-hover', theme.runBtnHover);
+    root.style.setProperty('--active-btn-bg', theme.activeBtnBg);
+    root.style.setProperty('--status-bg', theme.statusBg);
+    root.style.setProperty('--alive-status-bg', theme.aliveStatusBg);
+    root.style.setProperty('--alive-status-color', theme.aliveStatusColor);
+    root.style.setProperty('--alive-status-border', theme.aliveStatusBorder);
+    root.style.setProperty('--doomed-status-bg', theme.doomedStatusBg);
+    root.style.setProperty('--doomed-status-color', theme.doomedStatusColor);
+    root.style.setProperty('--doomed-status-border', theme.doomedStatusBorder);
+    root.style.setProperty('--canvas-border', theme.canvasBorder);
+    root.style.setProperty('--focus-outline', theme.focusOutline);
+    root.style.setProperty('--modal-overlay', theme.modalOverlay);
+    root.style.setProperty('--score-gradient', theme.scoreGradient);
+    
+    // Update canvas background
+    if (render) {
+        render.options.background = theme.canvasBg;
+    }
+    
+    // Update ground and walls colors
+    const allBodies = Composite.allBodies(world);
+    allBodies.forEach(body => {
+        if (body.isStatic) {
+            // Identify static bodies by position/size
+            if (body.position.y > CANVAS_HEIGHT - GROUND_HEIGHT) {
+                // Ground
+                body.render.fillStyle = theme.groundColor;
+            } else if (body.position.x < 20 || body.position.x > CANVAS_WIDTH - 20) {
+                // Walls
+                body.render.fillStyle = theme.wallColor;
+            }
+        }
+    });
+    
+    // Update NPC colors
+    if (npc) {
+        npc.parts.forEach((part, index) => {
+            if (index === 0) return; // Skip compound body itself
+            if (index === 1) {
+                // Body
+                part.render.fillStyle = theme.npcBodyColor;
+            } else if (index === 2 || index === 3) {
+                // Arms
+                part.render.fillStyle = theme.npcLimbColor;
+            } else if (index === 4 || index === 5) {
+                // Legs
+                part.render.fillStyle = theme.npcLimbColor;
+            } else if (index === 6 || index === 7) {
+                // Feet
+                part.render.fillStyle = theme.npcFootColor;
+            }
+        });
+    }
+    
+    // Update existing placed objects
+    placedObjects.forEach(obj => {
+        updateObjectColor(obj, theme);
+    });
+    
+    // Save preference
+    localStorage.setItem('doomberg_theme', themeName);
+    
+    // Update theme selector
+    const themeSelector = document.getElementById('themeSelector');
+    if (themeSelector) {
+        themeSelector.value = themeName;
+    }
+}
+
+/**
+ * Update an object's color based on current theme
+ * @param {Matter.Body} body - The body to update
+ * @param {Object} theme - Theme object (optional, uses current theme if not provided)
+ */
+function updateObjectColor(body, theme = null) {
+    if (!theme) theme = THEMES[currentTheme];
+    
+    const label = body.label || '';
+    
+    // Handle seesaw parts
+    if (label === LABEL_SEESAW_PIVOT) {
+        body.render.fillStyle = theme.seesawPivotColor;
+        return;
+    }
+    if (label === LABEL_SEESAW_PLANK) {
+        body.render.fillStyle = theme.seesawPlankColor;
+        return;
+    }
+    
+    // Determine object type by properties
+    if (body.circleRadius) {
+        // Circle objects - ball or spring
+        if (body.restitution > 1) {
+            // Spring (high restitution)
+            body.render.fillStyle = theme.springColor;
+        } else {
+            // Ball
+            body.render.fillStyle = theme.ballColor;
+        }
+    } else if (label === 'explosive') {
+        // Explosive
+        body.render.fillStyle = body.hasDetonated ? theme.explosiveActiveColor : theme.explosiveColor;
+    } else {
+        // Rectangle objects - determine by size
+        const width = body.bounds.max.x - body.bounds.min.x;
+        const height = body.bounds.max.y - body.bounds.min.y;
+        
+        if (width > PLATFORM_MIN_WIDTH) {
+            // Platform (wide)
+            body.render.fillStyle = theme.platformColor;
+        } else if (height > DOMINO_MIN_HEIGHT) {
+            // Domino (tall)
+            body.render.fillStyle = theme.dominoColor;
+        } else if (width > height * 2) {
+            // Ramp (wider than tall)
+            body.render.fillStyle = theme.rampColor;
+        } else {
+            // Box
+            body.render.fillStyle = theme.boxColor;
+        }
+    }
+}
+
+/**
+ * Load theme preference from localStorage
+ */
+function loadThemePreference() {
+    const saved = localStorage.getItem('doomberg_theme');
+    if (saved && THEMES[saved]) {
+        applyTheme(saved);
+    } else {
+        applyTheme('classic');
+    }
+}
+
 // Initialize the game
 function init() {
     canvas = document.getElementById('gameCanvas');
@@ -356,6 +797,9 @@ function init() {
     // Load sound preference from localStorage
     loadSoundPreference();
     
+    // Load theme preference from localStorage
+    loadThemePreference();
+    
     // Setup collision detection (only once)
     Events.on(engine, 'collisionStart', (event) => {
         const pairs = event.pairs;
@@ -389,7 +833,7 @@ function init() {
                     applyExplosionForce(explosiveBody.position.x, explosiveBody.position.y, 150, 0.08, explosiveBody);
                     
                     // Change color to indicate explosion (visual feedback)
-                    explosiveBody.render.fillStyle = '#FFA500';  // Orange explosion color
+                    explosiveBody.render.fillStyle = THEMES[currentTheme].explosiveActiveColor;
                     
                     // Remove explosive immediately
                     Composite.remove(world, explosiveBody);
@@ -461,48 +905,63 @@ function createNPC() {
     const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;
     const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;
     
+    const theme = THEMES[currentTheme];
+    
     // Body
     const body = Bodies.rectangle(npcX, npcY, 30, 50, {
         render: {
-            fillStyle: '#FF0000'
+            fillStyle: theme.npcBodyColor
         }
     });
     
     // Head
     const head = Bodies.circle(npcX, npcY - 35, 15, {
         render: {
-            fillStyle: '#FFB6C1'
+            fillStyle: theme.npcLimbColor
         }
     });
     
     // Arms
     const leftArm = Bodies.rectangle(npcX - 20, npcY, 5, 30, {
         render: {
-            fillStyle: '#FFB6C1'
+            fillStyle: theme.npcLimbColor
         }
     });
     
     const rightArm = Bodies.rectangle(npcX + 20, npcY, 5, 30, {
         render: {
-            fillStyle: '#FFB6C1'
+            fillStyle: theme.npcLimbColor
         }
     });
     
     // Legs
     const leftLeg = Bodies.rectangle(npcX - 10, npcY + 35, 8, 20, {
         render: {
-            fillStyle: '#0000FF'
+            fillStyle: theme.npcLimbColor
         }
     });
     
     const rightLeg = Bodies.rectangle(npcX + 10, npcY + 35, 8, 20, {
         render: {
-            fillStyle: '#0000FF'
+            fillStyle: theme.npcLimbColor
+        }
+    });
+    
+    // Feet
+    const leftFoot = Bodies.rectangle(npcX - 10, npcY + 45, 8, 5, {
+        render: {
+            fillStyle: theme.npcFootColor
+        }
+    });
+    
+    const rightFoot = Bodies.rectangle(npcX + 10, npcY + 45, 8, 5, {
+        render: {
+            fillStyle: theme.npcFootColor
         }
     });
     
     npc = Body.create({
-        parts: [body, head, leftArm, rightArm, leftLeg, rightLeg],
+        parts: [body, head, leftArm, rightArm, leftLeg, rightLeg, leftFoot, rightFoot],
         isStatic: true,
         label: 'npc'
     });
@@ -600,6 +1059,15 @@ function setupEventListeners() {
     if (soundBtn) {
         soundBtn.addEventListener('click', () => {
             toggleSound();
+            playSound('ui');
+        });
+    }
+    
+    // Theme selector
+    const themeSelector = document.getElementById('themeSelector');
+    if (themeSelector) {
+        themeSelector.addEventListener('change', () => {
+            applyTheme(themeSelector.value);
             playSound('ui');
         });
     }
@@ -716,16 +1184,18 @@ function createSeesaw(x, y, seesawId = null) {
         seesawId = seesawIdCounter++;
     }
     
+    const theme = THEMES[currentTheme];
+    
     const pivot = Bodies.rectangle(x, y, 10, 40, {
         isStatic: true,
         label: LABEL_SEESAW_PIVOT,
-        render: { fillStyle: '#AA8976' }
+        render: { fillStyle: theme.seesawPivotColor }
     });
     
     const plank = Bodies.rectangle(x, y - 20, 120, 10, {
         density: 0.05,
         label: LABEL_SEESAW_PLANK,
-        render: { fillStyle: '#EAAC8B' }
+        render: { fillStyle: theme.seesawPlankColor }
     });
     
     // Store original positions
@@ -860,6 +1330,7 @@ function applyAction(action) {
 }
 
 function recreateBody(type, x, y, angle) {
+    const theme = THEMES[currentTheme];
     let body;
     
     switch(type) {
@@ -867,41 +1338,41 @@ function recreateBody(type, x, y, angle) {
             body = Bodies.circle(x, y, 20, {
                 restitution: 0.8,
                 density: 0.04,
-                render: { fillStyle: '#FF6B6B' }
+                render: { fillStyle: theme.ballColor }
             });
             break;
         case 'box':
             body = Bodies.rectangle(x, y, 40, 40, {
                 restitution: 0.3,
                 density: 0.05,
-                render: { fillStyle: '#A0522D' }
+                render: { fillStyle: theme.boxColor }
             });
             break;
         case 'domino':
             body = Bodies.rectangle(x, y, 10, 60, {
                 restitution: 0.1,
                 density: 0.05,
-                render: { fillStyle: '#4ECDC4' }
+                render: { fillStyle: theme.dominoColor }
             });
             break;
         case 'ramp':
             body = Bodies.rectangle(x, y, 120, 10, {
                 isStatic: true,
                 angle: angle,
-                render: { fillStyle: '#95E1D3' }
+                render: { fillStyle: theme.rampColor }
             });
             break;
         case 'platform':
             body = Bodies.rectangle(x, y, 150, 10, {
                 isStatic: true,
-                render: { fillStyle: '#F38181' }
+                render: { fillStyle: theme.platformColor }
             });
             break;
         case 'spring':
             body = Bodies.circle(x, y, 15, {
                 restitution: 1.5,
                 density: 0.02,
-                render: { fillStyle: '#9B59B6' }
+                render: { fillStyle: theme.springColor }
             });
             break;
         case 'explosive':
@@ -909,7 +1380,7 @@ function recreateBody(type, x, y, angle) {
                 restitution: 0.3,
                 density: 0.06,
                 label: 'explosive',
-                render: { fillStyle: '#E74C3C' }
+                render: { fillStyle: theme.explosiveColor }
             });
             break;
     }
@@ -941,6 +1412,7 @@ function placeObject(type, x, y) {
         return;
     }
     
+    const theme = THEMES[currentTheme];
     let body;
     
     switch(type) {
@@ -949,7 +1421,7 @@ function placeObject(type, x, y) {
                 restitution: 0.8,
                 density: 0.04,
                 render: {
-                    fillStyle: '#FF6B6B'
+                    fillStyle: theme.ballColor
                 }
             });
             break;
@@ -959,7 +1431,7 @@ function placeObject(type, x, y) {
                 restitution: 0.3,
                 density: 0.05,
                 render: {
-                    fillStyle: '#A0522D'
+                    fillStyle: theme.boxColor
                 }
             });
             break;
@@ -969,7 +1441,7 @@ function placeObject(type, x, y) {
                 restitution: 0.1,
                 density: 0.05,
                 render: {
-                    fillStyle: '#4ECDC4'
+                    fillStyle: theme.dominoColor
                 }
             });
             break;
@@ -979,7 +1451,7 @@ function placeObject(type, x, y) {
                 isStatic: true,
                 angle: currentRampAngle,
                 render: {
-                    fillStyle: '#95E1D3'
+                    fillStyle: theme.rampColor
                 }
             });
             break;
@@ -988,7 +1460,7 @@ function placeObject(type, x, y) {
             body = Bodies.rectangle(x, y, 150, 10, {
                 isStatic: true,
                 render: {
-                    fillStyle: '#F38181'
+                    fillStyle: theme.platformColor
                 }
             });
             break;
@@ -1022,7 +1494,7 @@ function placeObject(type, x, y) {
                 restitution: 1.5,  // Super bouncy - launches objects
                 density: 0.02,     // Light weight
                 render: {
-                    fillStyle: '#9B59B6'  // Purple color
+                    fillStyle: theme.springColor
                 }
             });
             break;
@@ -1033,7 +1505,7 @@ function placeObject(type, x, y) {
                 density: 0.06,
                 label: 'explosive',  // Label for explosion detection
                 render: {
-                    fillStyle: '#E74C3C'  // Red color
+                    fillStyle: theme.explosiveColor
                 }
             });
             break;
