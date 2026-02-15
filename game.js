@@ -13,6 +13,8 @@ const Engine = Matter.Engine,
 const CANVAS_WIDTH = 1200;
 const CANVAS_HEIGHT = 600;
 const GROUND_HEIGHT = 20;
+const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
+const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
 
 /**
  * Normalize an angle in radians to the range [0, 2π).
@@ -128,9 +130,9 @@ function createNPC() {
     // Position NPC standing on the ground
     const npcX = CANVAS_WIDTH - 100;
     // Calculate Y position so NPC stands on ground (ground top is at CANVAS_HEIGHT - GROUND_HEIGHT)
-    // Legs are 20 pixels tall, and positioned 35 pixels below body center
+    // Legs are positioned NPC_LEG_OFFSET pixels below body center
     const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;
-    const npcY = groundTop - 35 - 10; // 35 for leg offset, 10 for half leg height
+    const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;
     
     // Body
     const body = Bodies.rectangle(npcX, npcY, 30, 50, {
