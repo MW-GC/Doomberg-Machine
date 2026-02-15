@@ -24,23 +24,23 @@ All completed features are documented in detail in [technical.md](technical.md) 
 
 | Feature | Description | Details |
 |---------|-------------|---------|
-| **Object Deletion** | Right-click to delete placed objects | [gameplay.md](gameplay.md#controls) |
-| **Object Counter** | Display count of placed objects | [gameplay.md](gameplay.md#ui-elements) |
-| **Pause/Play** | Pause and resume simulation | [gameplay.md](gameplay.md#controls) |
-| **Undo/Redo** | Full undo/redo system with Ctrl+Z/Ctrl+Y | [technical.md](technical.md#undoredo-system) |
-| **Slow Motion** | Slow-mo control for detailed observation | [gameplay.md](gameplay.md#controls) |
-| **Bug Fixes** | Fixed NPC visibility, tunneling, and reset issues | [technical.md](technical.md#bug-fixes) |
+| **Object Deletion** | Right-click to delete placed objects | [gameplay.md](gameplay.md#controls-reference) |
+| **Object Counter** | Display count of placed objects | [gameplay.md](gameplay.md#how-to-play) |
+| **Pause/Play** | Pause and resume simulation | [gameplay.md](gameplay.md#controls-reference) |
+| **Undo/Redo** | Full undo/redo system with Ctrl+Z/Ctrl+Y | [gameplay.md](gameplay.md#controls-reference) |
+| **Slow Motion** | Slow-mo control for detailed observation | [gameplay.md](gameplay.md#controls-reference) |
+| **Bug Fixes** | Fixed NPC visibility, tunneling, and reset issues | [technical.md](technical.md) |
 
 ### Phase 2: Core Features (Completed February 2026)
 
 | Feature | Description | Details |
 |---------|-------------|---------|
-| **Save/Load System** | LocalStorage-based contraption saving with custom names | [technical.md](technical.md#saveload-system) |
-| **Spring Object** | Super-bouncy object with 1.5 restitution coefficient | [gameplay.md](gameplay.md#objects) |
-| **Explosive Object** | Collision-triggered explosive with radial force | [gameplay.md](gameplay.md#objects) |
-| **Scoring System** | Score based on efficiency, speed, variety with star ratings | [gameplay.md](gameplay.md#scoring) |
-| **Grid/Snap Toggle** | Optional 40px grid overlay with snap-to-grid placement | [gameplay.md](gameplay.md#controls) |
-| **Sound Effects** | Web Audio API oscillator synthesis for game actions | [technical.md](technical.md#sound-system) |
+| **Save/Load System** | LocalStorage-based contraption saving with custom names | [technical.md](technical.md#9-saveload-system) |
+| **Spring Object** | Super-bouncy object with 1.5 restitution coefficient | [gameplay.md](gameplay.md#available-objects) |
+| **Explosive Object** | Collision-triggered explosive with radial force | [gameplay.md](gameplay.md#available-objects) |
+| **Scoring System** | Score based on efficiency, speed, variety with star ratings | [gameplay.md](gameplay.md#scoring-system) |
+| **Grid/Snap Toggle** | Optional 40px grid overlay with snap-to-grid placement | [gameplay.md](gameplay.md#controls-reference) |
+| **Sound Effects** | Web Audio API oscillator synthesis for game actions | [technical.md](technical.md#8-sound-system) |
 
 ---
 
@@ -576,12 +576,13 @@ All 6 quick-win features have been successfully implemented:
 ---
 
 ### ✅ Phase 2: Core Features - COMPLETED (February 2026)
-All 5 core features have been successfully implemented:
+All 6 Phase 2 features have been successfully implemented:
 - Save/load system (localStorage)
 - Scoring system
 - Grid/snap toggle
 - Sound effects
-- Initial object variety expansion (Spring, Explosive)
+- Spring object (object variety expansion)
+- Explosive object (object variety expansion)
 
 **Note**: Object variety expansion is ongoing - more objects (fan, rope, portal, etc.) are planned for future phases.
 
@@ -676,11 +677,11 @@ If opening to community feedback, consider:
 ### Current Status
 
 ✅ **Phase 1 (Quick Wins)**: Complete - 6/6 features implemented  
-✅ **Phase 2 (Core Features)**: Complete - 5/5 features implemented  
+✅ **Phase 2 (Core Features)**: Complete - 6/6 features implemented  
 ⏳ **Phase 3 (Content & Polish)**: Planned - 0/5 features  
 ⏳ **Phase 4 (Platform & Scale)**: Planned - 0/5 features
 
-**Total Progress**: 11/20 major features completed (55%)
+**Total Progress**: 12/22 major features completed (55%)
 
 ### Recommended Next Steps
 
