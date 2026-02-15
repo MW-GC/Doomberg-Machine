@@ -58,9 +58,8 @@ let seesawIdCounter = 0; // Counter for unique seesaw IDs
 // Undo/Redo system
 let actionHistory = [];
 let historyIndex = -1;
-const LABEL_SEESAW_PIVOT = 'seesaw_pivot';
-const LABEL_SEESAW_PLANK = 'seesaw_plank';
-let seesawIdCounter = 0;
+
+
 
 // Initialize the game
 function init() {
