@@ -114,9 +114,10 @@ Doomberg-Machine/
 #### `style.css`
 - Modern CSS3 features
 - Responsive design with media queries
-- Gradient backgrounds and animations
+- Gradient backgrounds and animations (used for UI, NOT for canvas element)
 - Accessibility features (focus states)
 - Component-based organization
+- **Important**: Canvas element (`#gameCanvas`) should NOT have CSS background property
 
 #### `game.js`
 - Core game logic (431 lines)
@@ -240,10 +241,12 @@ render = Render.create({
         width: 1200,
         height: 600,
         wireframes: false,
-        background: '#87CEEB'
+        background: '#87CEEB'  // Matter.js handles background fill
     }
 });
 ```
+
+**Important**: The canvas element should NOT have a CSS background as it will render over the canvas drawing context. Matter.js's `background` option fills the canvas properly before rendering physics bodies.
 
 ### Physics Properties
 
@@ -261,6 +264,17 @@ render = Render.create({
 #### Static vs Dynamic Bodies
 - **Static**: ramp, platform, pivot (don't move, infinite mass)
 - **Dynamic**: ball, box, domino, seesaw plank (affected by physics)
+
+#### NPC Positioning Constants
+The NPC is positioned to stand on the ground from initialization to prevent physics phase-through issues:
+- **`NPC_LEG_OFFSET`**: 35 pixels - Distance from NPC body center to leg center
+- **`NPC_HALF_LEG_HEIGHT`**: 10 pixels - Half the height of NPC legs
+- **Positioning calculation**: 
+  ```javascript
+  const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;  // 580
+  const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;  // 535
+  ```
+- This ensures NPC feet are placed at ground level (y=580) when created, preventing the NPC from falling through the ground when made dynamic
 
 ### Constraints
 
@@ -307,9 +321,13 @@ Initializes the game engine, renderer, world, and event listeners.
 - **Returns**: void
 
 #### `createNPC()`
-Creates the NPC as a compound body with multiple parts.
+Creates the NPC as a compound body with multiple parts positioned on the ground.
 - **Returns**: void
 - **Side Effects**: Sets global `npc` variable
+- **Positioning**: NPC is placed directly on ground surface to prevent physics phase-through
+  - Ground top = `CANVAS_HEIGHT - GROUND_HEIGHT` = 580
+  - NPC Y = `groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT` = 545
+  - This ensures NPC feet touch the ground when simulation starts
 
 #### `placeObject(type, x, y)`
 Factory function for creating and placing game objects.
@@ -594,6 +612,18 @@ description: Build Rube Goldberg machines of doom!
 ## 🐛 Debugging
 
 ### Common Issues
+
+**Issue: Canvas shows background gradient but no game objects**
+- Check that canvas element in CSS does NOT have a `background` property
+- Matter.js `render.options.background` should be set for proper rendering
+- CSS backgrounds render over the canvas drawing context, hiding game content
+- Solution: Remove any CSS `background` from `#gameCanvas`
+
+**Issue: NPC disappears when simulation starts**
+- Verify NPC is positioned on ground surface, not floating above it
+- Check `createNPC()` uses `NPC_LEG_OFFSET` and `NPC_HALF_LEG_HEIGHT` constants
+- NPC should be at y=545 (with ground at y=580) for proper ground contact
+- If NPC floats and falls, it may phase through ground due to compound body physics
 
 **Issue: Objects fall through ground**
 - Check ground body is static
