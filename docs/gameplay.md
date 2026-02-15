@@ -262,9 +262,74 @@ The game includes a complete save/load system that stores your contraptions in y
 | Undo | `Ctrl+Z` or Click "↶ Undo" |
 | Redo | `Ctrl+Y` or `Ctrl+Shift+Z` or Click "↷ Redo" |
 | Toggle Sound | Click "🔊 Sound" button |
-| Save Design | Type name and click "💾 Save" or press `Enter` |
-| Load Design | Select from dropdown and click "📂 Load" |
-| Delete Saved Design | Select from dropdown and click "🗑️ Delete" |
+| Record/Stop Recording | Click "⏺️ Record" (auto-starts when running) |
+| Replay Recording | Click "▶️ Replay" (available after reset) |
+| Stop Replay | Click "⏹️ Stop" |
+| Save Recording | Type name and click "💾 Save" (in Replay section) |
+| Load Recording | Select from dropdown and click "📂 Load" (in Replay section) |
+| Delete Recording | Select from dropdown and click "🗑️ Delete" (in Replay section) |
+| Save Design | Type name and click "💾 Save" (in Save/Load section) |
+| Load Design | Select from dropdown and click "📂 Load" (in Save/Load section) |
+| Delete Saved Design | Select from dropdown and click "🗑️ Delete" (in Save/Load section) |
+
+## 🎬 Replay & Recording System
+
+The replay system allows you to record and playback your contraption runs frame-by-frame, perfect for analysis, debugging, and sharing impressive machines!
+
+### How Recording Works
+
+- **Automatic Recording**: When you click "Run Machine", recording automatically starts
+- **Frame Capture**: Every frame captures position, angle, velocity, and angular velocity of all objects and NPC parts
+- **Stop Recording**: Recording stops when you click "Reset" or when the simulation ends
+- **Frame Rate**: Recordings capture at 60 FPS for smooth playback
+
+### Using Replay
+
+1. **Run Your Machine**: Click "▶️ Run Machine" (recording starts automatically)
+2. **Watch It Run**: Observe your contraption in action
+3. **Reset**: Click "🔄 Reset" when done (recording stops)
+4. **Replay**: Click "▶️ Replay" to watch the recording again
+5. **Stop Replay**: Click "⏹️ Stop" to end playback early (optional)
+
+### Saving & Loading Recordings
+
+**Save a Recording:**
+1. After recording a run, type a name in the "Recording name..." field
+2. Click "💾 Save" button
+3. Recording is saved to browser localStorage with frame count confirmation
+
+**Load a Recording:**
+1. Select a recording from the dropdown list
+2. Click "📂 Load" button  
+3. Recording loads and is ready for replay
+
+**Delete a Recording:**
+1. Select a recording from the dropdown list
+2. Click "🗑️ Delete" button
+3. Confirm deletion in the prompt
+
+### Replay Features
+
+- **Frame-Perfect Playback**: Every frame is replayed exactly as recorded
+- **Non-Interactive**: Tool buttons are disabled during replay to prevent editing
+- **Reset Required**: After replay, reset the machine before running again or replaying
+- **Storage**: Recordings stored in localStorage persist across browser sessions
+
+### Use Cases
+
+- **Analysis**: Study how your contraption behaves in slow detail
+- **Debugging**: Identify why a machine doesn't work as expected
+- **Sharing**: Save impressive runs and describe them to others
+- **Iteration**: Compare multiple attempts to optimize your design
+- **Documentation**: Keep a record of successful doom strategies
+
+### Tips
+
+- Shorter runs create smaller recordings (better for storage)
+- Recording names can be up to 30 characters
+- Each recording includes timestamp and frame count metadata
+- Recordings are device and browser-specific (like saved designs)
+- Clear browser data will delete saved recordings
 
 ## ❓ Frequently Asked Questions
 
@@ -294,6 +359,18 @@ A: Browser localStorage typically allows 5-10MB. Each contraption is small (a fe
 
 **Q: What happens if I save with the same name twice?**  
 A: The new save will overwrite the old one. Use unique names or add version numbers (e.g., "Machine v1", "Machine v2") to keep multiple iterations.
+
+**Q: How does the replay system work?**  
+A: When you run a machine, the game records position, velocity, and angle data for every object and NPC part at 60 frames per second. Replay applies this recorded data frame-by-frame to recreate the exact simulation.
+
+**Q: Can I edit my contraption while replaying?**  
+A: No, tool buttons are disabled during replay to prevent conflicts. Stop the replay or wait for it to finish, then reset the machine to edit.
+
+**Q: How much storage do recordings use?**  
+A: Each frame stores data for all objects (~100-200 bytes per frame). A 10-second recording at 60 FPS (600 frames) uses about 100KB. Browser localStorage can typically handle hundreds of recordings.
+
+**Q: Can I export recordings to share with others?**  
+A: Not currently - recordings are saved locally in your browser. Future updates may add export/import functionality.
 
 **Q: How do I use pause and slow-motion?**  
 A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.

@@ -469,6 +469,125 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
 - No cross-browser sync
 - Cleared with browser data
 
+### 10. Replay & Recording System
+
+**Architecture**:
+- Frame-by-frame capture of physics state during simulation
+- Automatic recording when "Run Machine" is clicked
+- Stores position, angle, velocity, and angular velocity for all objects
+- Playback applies recorded frame data to recreate exact simulation
+- Recordings saved to localStorage with metadata
+
+**Recording Data Structure**:
+```javascript
+{
+    version: 1,                    // Format version for compatibility
+    timestamp: 1708034567890,      // Unix timestamp (ms)
+    frameCount: 649,               // Total frames recorded
+    frames: [
+        {
+            timestamp: 1708034567890,
+            objects: [
+                {
+                    id: 1,                         // Matter.js body ID
+                    position: { x: 299.5, y: 198.2 },
+                    angle: 0.123,                  // Radians
+                    velocity: { x: 2.5, y: -1.2 },
+                    angularVelocity: 0.05
+                }
+                // ... more objects
+            ],
+            npc: [
+                {
+                    id: 7,                         // NPC body part ID
+                    position: { x: 1100, y: 545 },
+                    angle: 0,
+                    velocity: { x: 0, y: 0 },
+                    angularVelocity: 0
+                }
+                // ... more NPC parts (head, arms, legs)
+            ]
+        }
+        // ... more frames (typically 600-3600 for 10-60 second runs)
+    ]
+}
+```
+
+**Key Functions**:
+
+`captureFrame()`: Captures current state of all objects and NPC
+```javascript
+// Called every frame during recording
+const frame = {
+    timestamp: Date.now(),
+    objects: placedObjects.map(obj => ({
+        id: obj.id,
+        position: { x: obj.position.x, y: obj.position.y },
+        angle: obj.angle,
+        velocity: { x: obj.velocity.x, y: obj.velocity.y },
+        angularVelocity: obj.angularVelocity
+    })),
+    npc: npc.parts.map(part => ({ /* same structure */ }))
+};
+recordedFrames.push(frame);
+```
+
+`applyFrame(frame)`: Applies a recorded frame to restore state
+```javascript
+// Called every frame during replay
+frame.objects.forEach(objData => {
+    const obj = placedObjects.find(o => o.id === objData.id);
+    if (obj) {
+        Body.setPosition(obj, objData.position);
+        Body.setAngle(obj, objData.angle);
+        Body.setVelocity(obj, objData.velocity);
+        Body.setAngularVelocity(obj, objData.angularVelocity);
+    }
+});
+```
+
+**Recording Lifecycle**:
+1. User clicks "Run Machine"
+2. `startRecording()` called automatically, initializes `recordedFrames = []`
+3. Engine `afterUpdate` event captures frame each tick (60 FPS)
+4. User clicks "Reset"
+5. `stopRecording()` called, updates UI
+6. "Replay" button becomes enabled
+
+**Playback Lifecycle**:
+1. User clicks "Replay"
+2. `startReplay()` disables tool buttons, creates replay runner
+3. Replay runner uses custom `afterUpdate` handler to apply frames sequentially
+4. Each frame: `applyFrame(recordedFrames[replayFrameIndex++])`
+5. When `replayFrameIndex >= recordedFrames.length`, automatically calls `stopReplay()`
+6. `stopReplay()` re-enables tool buttons, cleans up replay runner
+
+**Storage**:
+- localStorage key pattern: `doomberg_recording_{name}`
+- Same quota as saved designs (~5-10MB typical)
+- Frame data is JSON serialized
+- Each recording: ~100-500KB depending on object count and duration
+
+**Performance Considerations**:
+- 60 FPS recording generates ~100-200 bytes per frame
+- 10-second recording = 600 frames ≈ 100KB
+- 60-second recording = 3600 frames ≈ 600KB
+- NPC parts add ~60 bytes per frame (6 parts × 10 bytes each)
+- Replay has minimal performance impact (just setting physics properties)
+
+**Error Handling**:
+- Try-catch around localStorage operations
+- Graceful handling of missing recorded frames
+- ID mismatch protection (objects recreated with same IDs)
+- Replay stops automatically if frame data is invalid
+
+**Limitations**:
+- Recording size grows with object count and duration
+- No compression applied to frame data
+- Recordings are device and browser-specific
+- Cannot edit contraption during replay
+- Requires reset before replaying again
+
 ### Constraints
 
 **Seesaw Constraint**:
