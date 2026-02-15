@@ -75,7 +75,6 @@ let historyIndex = -1;
 let gameStartTime = 0;
 let doomTime = 0;
 let collisionCount = 0;
-let objectTypesUsed = new Set();
 let currentScore = 0;
 let currentStars = 0;
 
@@ -710,9 +709,6 @@ function placeObject(type, x, y) {
         return;
     }
     
-    // Track object type for scoring
-    objectTypesUsed.add(type);
-    
     let body;
     
     switch(type) {
@@ -993,13 +989,28 @@ function calculateAndDisplayScore() {
     breakdown.push({ label: `Efficiency (${objectCount} objects)`, points: efficiencyBonus });
     
     // Speed bonus (faster doom = higher score)
-    // Max bonus 500 for doom under 1 second, decreases by 50 per second
+    // Max bonus 500 at 0 seconds, decreases by 50 points per second
     const speedBonus = Math.max(0, Math.round(500 - (doomTime * 50)));
     score += speedBonus;
     breakdown.push({ label: `Speed (${doomTime.toFixed(1)}s)`, points: speedBonus });
     
     // Variety bonus (different object types used)
-    const varietyCount = objectTypesUsed.size;
+    // Derive from current placed objects to handle deletions/undo/redo correctly
+    const currentTypes = new Set();
+    placedObjects.forEach(obj => {
+        if (obj.label === LABEL_SEESAW_PIVOT || obj.label === LABEL_SEESAW_PLANK) {
+            currentTypes.add('seesaw');
+        } else if (obj.circleRadius) {
+            currentTypes.add('ball');
+        } else if (obj.isStatic) {
+            const width = obj.bounds.max.x - obj.bounds.min.x;
+            currentTypes.add(width > 140 ? 'platform' : 'ramp');
+        } else {
+            const height = obj.bounds.max.y - obj.bounds.min.y;
+            currentTypes.add(height > 50 ? 'domino' : 'box');
+        }
+    });
+    const varietyCount = currentTypes.size;
     const varietyBonus = varietyCount * 100;
     score += varietyBonus;
     breakdown.push({ label: `Variety (${varietyCount} types)`, points: varietyBonus });
@@ -1049,7 +1060,11 @@ function showScoreModal(score, stars, breakdown) {
         
         // Close modal handler
         document.getElementById('closeScoreModal').addEventListener('click', () => {
-            modal.style.display = 'none';
+            modal.classList.remove('show');
+            // Wait for transition to complete before hiding
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
         });
     }
     
@@ -1149,7 +1164,6 @@ function clearAll() {
     updateUndoRedoButtons();
     
     // Reset scoring metrics
-    objectTypesUsed.clear();
     collisionCount = 0;
     currentScore = 0;
     currentStars = 0;

@@ -135,8 +135,8 @@ When you successfully doom the NPC, your contraption is scored based on four key
 **⏱️ Speed Bonus (up to 500 points)**
 - Faster doom = higher score
 - Formula: `500 - (doom_time_seconds × 50)`
-- Dooming in under 1 second gives maximum bonus
-- Each additional second reduces your bonus by 50 points
+- Maximum bonus is only achieved when doom happens immediately (0.0s)
+- The bonus decreases linearly by 50 points per second of delay (e.g., 0.8s → 460, 1.0s → 450)
 
 **🎨 Variety Bonus (100 points per type)**
 - Using different object types increases your score

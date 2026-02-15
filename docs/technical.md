@@ -192,7 +192,6 @@ let placedConstraints = []; // Array of constraint references
 let gameStartTime = 0;      // Timestamp when machine starts running
 let doomTime = 0;           // Time in seconds from start to doom
 let collisionCount = 0;     // Total collisions during simulation
-let objectTypesUsed = new Set(); // Set of unique object types placed
 let currentScore = 0;       // Most recent calculated score
 let currentStars = 0;       // Most recent star rating (1-3)
 ```
@@ -256,10 +255,10 @@ The scoring system evaluates player performance across four metrics, with a comb
    - Each additional object reduces bonus by 20 points
 3. **Speed Bonus** (0-500 points): Rewards faster completion
    - Formula: `max(0, 500 - (doomTime × 50))`
-   - Under 1 second = 500 points
-   - Each additional second reduces bonus by 50 points
+   - At 0 seconds = 500 points
+   - Every 1 second increase in `doomTime` reduces the bonus by 50 points (e.g., 0.8s → 460, 1s → 450, 2s → 400)
 4. **Variety Bonus** (0-600 points): Rewards using different object types
-   - Formula: `objectTypesUsed.size × 100`
+   - Derived from current placed objects at doom time
    - Each unique type = 100 points
    - Maximum 600 points (all 6 types)
 5. **Combo Multiplier** (1.0x-1.6x): Rewards chain reactions
@@ -278,7 +277,7 @@ if (score >= 2800) stars = 3;
 - `gameStartTime`: Set when `runMachine()` is called
 - `doomTime`: Calculated as `(Date.now() - gameStartTime) / 1000` when NPC is doomed
 - `collisionCount`: Incremented on every collision during gameplay
-- `objectTypesUsed`: Set populated in `placeObject()` function
+- Variety: Derived from `placedObjects` array at scoring time by examining object properties
 
 **Display**:
 - Modal appears 1 second after doom
