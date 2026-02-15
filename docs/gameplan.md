@@ -190,38 +190,64 @@ function updateObjectCounter() {
 
 ---
 
-#### 4. Grid/Snap Toggle
+#### 4. Grid/Snap Toggle ✅ **IMPLEMENTED**
 **Priority**: Medium  
 **Effort**: Medium  
-**Value**: Medium
+**Value**: Medium  
+**Status**: ✅ Completed (February 2026)
 
-**Description**: Optional grid overlay with snap-to-grid placement
+**Description**: Optional grid overlay with snap-to-grid placement for precise object positioning
 
 **Implementation**:
 ```javascript
-let gridEnabled = false;
-const GRID_SIZE = 20;
+let isGridEnabled = false;
+const GRID_SIZE = 40; // Grid cell size in pixels
 
 function snapToGrid(x, y) {
-    if (!gridEnabled) return { x, y };
+    if (!isGridEnabled) return { x, y };
     return {
         x: Math.round(x / GRID_SIZE) * GRID_SIZE,
         y: Math.round(y / GRID_SIZE) * GRID_SIZE
     };
 }
 
-function drawGrid() {
-    if (!gridEnabled) return;
-    const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    // Draw grid lines...
+function drawGrid(context) {
+    if (!isGridEnabled) return;
+    // Draw vertical and horizontal grid lines
+    context.strokeStyle = GRID_LINE_COLOR;
+    context.lineWidth = 1;
+    // ... grid rendering logic
+}
+
+function toggleGrid() {
+    isGridEnabled = !isGridEnabled;
+    updateStatus(isGridEnabled ? 'Grid: ON' : 'Grid: OFF');
+    const btn = document.getElementById('gridToggleBtn');
+    btn.classList.toggle('active');
+    btn.textContent = isGridEnabled ? '⊞ Grid: ON' : '⊞ Grid: OFF';
 }
 ```
 
+**Features Delivered**:
+- ✅ Toggle button to enable/disable grid (⊞ icon)
+- ✅ Visual grid overlay with 40x40 pixel cells
+- ✅ Snap-to-grid placement when enabled
+- ✅ Subtle gray grid lines (rgba(0, 0, 0, 0.1))
+- ✅ Button shows active state with styling
+- ✅ Status message updates
+- ✅ Grid renders after each physics frame using afterRender event
+
+**UI Changes**:
+- ✅ Added "⊞ Grid: OFF" / "⊞ Grid: ON" toggle button
+- ✅ Button highlights when grid is active
+- ✅ Grid overlay drawn on canvas
+
 **Benefits**:
-- More precise placement
-- Easier to align objects
-- Professional look
+- ✅ More precise object placement
+- ✅ Easier to align objects vertically and horizontally
+- ✅ Professional contraption designs
+- ✅ Better spatial planning
+- ✅ Optional (can be toggled on/off)
 
 ---
 
@@ -263,14 +289,17 @@ function normalSpeed() {
 
 These features add significant value but require more effort.
 
-#### 6. More Object Types
+#### 6. More Object Types ✅ **IMPLEMENTED**
 **Priority**: Medium  
 **Effort**: Medium per object  
-**Value**: High
+**Value**: High  
+**Status**: ✅ Completed (February 2026)
 
-**Proposed New Objects**:
+**Description**: Expand object variety with new physics-based objects
 
-**Spring** 🌀
+**Implemented Objects**:
+
+**Spring** 🌀 ✅
 ```javascript
 case 'spring':
     body = Bodies.circle(x, y, 15, {
@@ -280,23 +309,11 @@ case 'spring':
     });
     break;
 ```
+- Super-bouncy object with above-unity restitution
+- Creates dynamic chain reactions
+- Purple color for easy identification
 
-**Fan** 💨
-```javascript
-case 'fan':
-    // Static body with force field
-    body = Bodies.rectangle(x, y, 40, 40, {
-        isStatic: true,
-        render: { fillStyle: '#00FFFF' },
-        plugin: {
-            wind: { x: 0.02, y: 0 }  // Right-facing wind
-        }
-    });
-    // In update loop, apply force to nearby objects
-    break;
-```
-
-**Explosive** 💣
+**Explosive** 💣 ✅
 ```javascript
 case 'explosive':
     body = Bodies.circle(x, y, 20, {
@@ -305,26 +322,33 @@ case 'explosive':
         render: { fillStyle: '#FF4500' },
         label: 'explosive'
     });
-    // On collision with sufficient force, explode
+    // Detonates on collision with sufficient force
     break;
 ```
+- Explodes when hit with velocity > 1
+- Applies radial force to nearby objects
+- Uses `applyExplosionForce()` for realistic blast physics
+- Orange color for explosion effect
 
-**Rope/Chain** ⛓️
-```javascript
-case 'rope':
-    // Create chain of connected bodies
-    const segments = createRopeSegments(x, y, length);
-    // Use constraints to connect them
-    break;
-```
+**Features Delivered**:
+- ✅ Spring object with 1.5 restitution coefficient
+- ✅ Explosive object with collision-triggered detonation
+- ✅ Radial explosion force applied to nearby objects
+- ✅ Visual feedback (color change on detonation)
+- ✅ Proper cleanup and removal after detonation
+- ✅ Integration with undo/redo system
+- ✅ Save/load support for new object types
 
-**Portal** 🌀
-```javascript
-case 'portal':
-    // Create pair of portals (A and B)
-    // Teleport objects from one to the other
-    break;
-```
+**Benefits**:
+- ✅ Increased creative possibilities
+- ✅ More complex contraption designs
+- ✅ Enhanced gameplay variety
+- ✅ Chain reaction opportunities
+
+**Future Object Ideas** (Not in this phase):
+- Fan 💨 - Force field to push objects
+- Rope/Chain ⛓️ - Flexible connected segments
+- Portal 🌀 - Teleportation between two points
 
 ---
 
@@ -572,39 +596,129 @@ function calculateScore() {
 
 ### 🎭 Polish & UX (Lower Priority but High Impact)
 
-#### 11. Sound Effects
+#### 11. Sound Effects ✅ **IMPLEMENTED**
 **Priority**: Low  
 **Effort**: Medium  
-**Value**: High
+**Value**: High  
+**Status**: ✅ Completed (February 2026)
 
-**Sounds Needed**:
-- Object placement: "plop" sound
-- Collision: varying impact sounds based on force
-- Doom: dramatic sound effect
-- UI interactions: click, hover sounds
-- Background music: optional ambient track
+**Description**: Add audio feedback for game actions using Web Audio API
 
 **Implementation**:
-```javascript
-const sounds = {
-    place: new Audio('sounds/place.mp3'),
-    collision: new Audio('sounds/collision.mp3'),
-    doom: new Audio('sounds/doom.mp3'),
-    ui: new Audio('sounds/click.mp3')
-};
 
-function playSound(soundName) {
-    if (sounds[soundName] && !muted) {
-        sounds[soundName].currentTime = 0;
-        sounds[soundName].play();
+**Web Audio API with Oscillator Synthesis**:
+```javascript
+let soundEnabled = true;
+let audioContext = null;
+
+// Initialize audio context with feature detection
+try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+        audioContext = new AudioContextClass();
+    } else {
+        soundEnabled = false;
+    }
+} catch (e) {
+    soundEnabled = false;
+    audioContext = null;
+}
+
+function playSound(type) {
+    if (!soundEnabled || !audioContext) return;
+    
+    // Resume audio context if suspended (for autoplay policies)
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Configure sound based on type
+    switch(type) {
+        case 'place':
+            oscillator.frequency.value = 440;
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+            break;
+        
+        case 'collision':
+            oscillator.frequency.value = 220;
+            // ... collision sound configuration
+            break;
+        
+        case 'doom':
+            oscillator.frequency.value = 110;
+            // ... doom sound configuration
+            break;
+        
+        case 'ui':
+            oscillator.frequency.value = 880;
+            // ... UI sound configuration
+            break;
+    }
+}
+
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('doomberg_sound_enabled', soundEnabled);
+    updateSoundButton();
+    updateStatus(soundEnabled ? 'Sound: ON' : 'Sound: OFF');
+}
+
+function loadSoundPreference() {
+    const saved = localStorage.getItem('doomberg_sound_enabled');
+    if (saved !== null) {
+        soundEnabled = saved === 'true';
     }
 }
 ```
 
-**UI Addition**:
-- Mute/unmute button
-- Volume control
-- Sound settings panel
+**Sounds Implemented**:
+- ✅ **Object placement**: Quick "plop" sound (440 Hz, 0.1s)
+- ✅ **Collision**: Impact sound based on force (220 Hz, variable duration)
+  - Rate-limited to 100ms cooldown to prevent audio spam
+  - Only plays for impacts with relative velocity > 1.5
+- ✅ **Doom**: Dramatic sound effect (110 Hz sweep, 0.8s)
+- ✅ **UI interactions**: Click/button sounds (880 Hz, 0.05s)
+
+**Features Delivered**:
+- ✅ Web Audio API oscillator-based sound synthesis
+- ✅ No external audio files required (procedurally generated)
+- ✅ Toggle button to mute/unmute sounds
+- ✅ Sound preference persists in localStorage
+- ✅ Collision sound rate limiting (prevents spam)
+- ✅ Feature detection for browser compatibility
+- ✅ Graceful fallback when Web Audio API unavailable
+- ✅ Auto-resume for browser autoplay policies
+- ✅ Sound button disables when audio unavailable
+
+**UI Changes**:
+- ✅ Added "🔊 Sound: ON" / "🔇 Sound: OFF" toggle button
+- ✅ Button shows current state with icon and text
+- ✅ Button disabled if Web Audio API unavailable
+- ✅ Status messages for sound state changes
+
+**Benefits**:
+- ✅ Enhanced audio feedback improves user experience
+- ✅ No external dependencies or file loading
+- ✅ Lightweight implementation
+- ✅ Persistent user preference
+- ✅ Accessible (can be disabled)
+- ✅ Browser-compatible with fallbacks
+
+**Future Audio Enhancements** (Not in this phase):
+- Background music with volume control
+- More varied collision sounds based on object types
+- Explosive detonation sound effect
+- Spring bounce sound
+- MP3/OGG audio files for richer sounds
 
 ---
 
@@ -964,13 +1078,13 @@ if (placedObjects.length >= MAX_OBJECTS) {
 
 ### Phase 2: Core Features (3-4 weeks)
 1. ✅ Save/load system (localStorage) - **COMPLETED**
-2. More object types (spring, explosive)
+2. ✅ More object types (spring, explosive) - **COMPLETED**
 3. ✅ Scoring system - **COMPLETED**
-4. Grid/snap toggle
-5. Sound effects
+4. ✅ Grid/snap toggle - **COMPLETED**
+5. ✅ Sound effects - **COMPLETED**
 
 **Impact**: Major feature additions that enhance gameplay  
-**Status**: 1/5 completed (20%)
+**Status**: ✅ 5/5 completed (100%)
 
 ### Phase 3: Content & Polish (4-6 weeks)
 1. Level system (10-15 levels)
