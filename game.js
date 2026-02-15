@@ -315,16 +315,23 @@ function placeObject(type, x, y) {
             // Create seesaw as two bodies - the pivot and the plank
             const pivot = Bodies.rectangle(x, y, 10, 40, {
                 isStatic: true,
+                label: 'seesaw-pivot',
                 render: {
                     fillStyle: '#AA8976'
                 }
             });
             const plank = Bodies.rectangle(x, y - 20, 120, 10, {
                 density: 0.05,
+                label: 'seesaw-plank',
                 render: {
                     fillStyle: '#EAAC8B'
                 }
             });
+            
+            // Link the parts together for deletion
+            const seesawId = Date.now() + Math.random();
+            pivot.seesawId = seesawId;
+            plank.seesawId = seesawId;
             
             // Store original positions
             pivot.originalPosition = { x: pivot.position.x, y: pivot.position.y };
@@ -464,24 +471,15 @@ function deleteObject(body) {
     const index = placedObjects.indexOf(body);
     if (index === -1) return;
     
-    // For seesaws, we need to remove both the pivot and plank, plus the constraint
-    const isSeesaw = placedObjects.some((obj, i) => {
-        // Check if this body is part of a seesaw by looking for a nearby body
-        if (obj !== body) {
-            const distance = Math.hypot(obj.position.x - body.position.x, obj.position.y - body.position.y);
-            // If bodies are close together (within 30 pixels), they might be seesaw parts
-            return distance < 30 && (i === index - 1 || i === index + 1);
-        }
-        return false;
-    });
+    // Check if this is a seesaw part by looking at its label or seesawId
+    const isSeesawPart = (body.label === 'seesaw-pivot' || body.label === 'seesaw-plank') && body.seesawId;
     
-    if (isSeesaw) {
-        // Find the related seesaw parts and constraints
-        const seesawBodies = placedObjects.filter(obj => {
-            const distance = Math.hypot(obj.position.x - body.position.x, obj.position.y - body.position.y);
-            return distance < 30;
-        });
+    if (isSeesawPart) {
+        // Find all parts of this seesaw using the seesawId
+        const seesawId = body.seesawId;
+        const seesawBodies = placedObjects.filter(obj => obj.seesawId === seesawId);
         
+        // Find constraints connecting these bodies
         const relatedConstraints = placedConstraints.filter(constraint => {
             return seesawBodies.includes(constraint.bodyA) || seesawBodies.includes(constraint.bodyB);
         });
