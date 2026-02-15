@@ -328,6 +328,7 @@ function placeObject(type, x, y) {
             placedObjects.push(pivot, plank);
             placedConstraints.push(constraint);
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
+            updateObjectCounter();
             return;
     }
     
@@ -339,6 +340,7 @@ function placeObject(type, x, y) {
         Composite.add(world, body);
         placedObjects.push(body);
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
+        updateObjectCounter();
     }
 }
 
@@ -426,10 +428,15 @@ function clearAll() {
     }
     
     updateStatus('All objects cleared! Start building your machine.');
+    updateObjectCounter();
 }
 
 function updateStatus(message) {
     document.getElementById('status').textContent = message;
+}
+
+function updateObjectCounter() {
+    document.getElementById('objectCounter').textContent = `Objects: ${placedObjects.length}`;
 }
 
 // Initialize game when page loads
