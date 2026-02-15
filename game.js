@@ -626,15 +626,52 @@ function updateLevelInfoDisplay() {
         levelInfoDiv.innerHTML = `
             <div class="level-info-header">
                 <strong>Level ${currentLevel.id}: ${currentLevel.name}</strong>
+                ${currentLevel.hints && currentLevel.hints.length > 0 ? '<button id="hintsToggleBtn" class="hints-toggle-btn">💡 Hints</button>' : ''}
             </div>
             <div class="level-info-details">
                 <span>Objects: ${playerObjectCount}/${currentLevel.maxObjects}</span>
                 ${currentLevel.timeLimit ? `<span>Time Limit: ${currentLevel.timeLimit}s</span>` : ''}
             </div>
+            <div id="hintsPanel" class="hints-panel" style="display: none;"></div>
         `;
         levelInfoDiv.style.display = 'block';
+        
+        // Add hints toggle listener
+        const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+        if (hintsToggleBtn) {
+            hintsToggleBtn.addEventListener('click', toggleHints);
+        }
     } else {
         levelInfoDiv.style.display = 'none';
+    }
+}
+
+/**
+ * Toggle hints panel visibility
+ */
+function toggleHints() {
+    if (!currentLevel || !currentLevel.hints) return;
+    
+    const hintsPanel = document.getElementById('hintsPanel');
+    const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+    
+    if (!hintsPanel || !hintsToggleBtn) return;
+    
+    const isVisible = hintsPanel.style.display !== 'none';
+    
+    if (isVisible) {
+        hintsPanel.style.display = 'none';
+        hintsToggleBtn.textContent = '💡 Hints';
+    } else {
+        // Populate hints
+        let hintsHTML = '<div class="hints-header">💡 Hints:</div><ol class="hints-list">';
+        currentLevel.hints.forEach(hint => {
+            hintsHTML += `<li>${hint}</li>`;
+        });
+        hintsHTML += '</ol>';
+        hintsPanel.innerHTML = hintsHTML;
+        hintsPanel.style.display = 'block';
+        hintsToggleBtn.textContent = '💡 Hide Hints';
     }
 }
 
