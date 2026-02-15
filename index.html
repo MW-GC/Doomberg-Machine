@@ -36,6 +36,19 @@
             </div>
             
             <div class="control-group">
+                <h3>Save/Load</h3>
+                <div class="save-load-controls">
+                    <input type="text" id="saveName" class="save-input" placeholder="Design name..." maxlength="30">
+                    <button id="saveBtn" class="action-btn">💾 Save</button>
+                    <button id="loadBtn" class="action-btn">📂 Load</button>
+                    <select id="savedList" class="saved-list">
+                        <option value="">-- Select saved design --</option>
+                    </select>
+                    <button id="deleteBtn" class="action-btn">🗑️ Delete</button>
+                </div>
+            </div>
+            
+            <div class="control-group">
                 <h3>Status</h3>
                 <div id="status">Ready to build!</div>
                 <div id="objectCounter" class="object-counter">Objects: 0</div>

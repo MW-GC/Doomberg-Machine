@@ -262,6 +262,33 @@ function setupEventListeners() {
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
     
+    // Save/Load buttons
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        const name = document.getElementById('saveName').value;
+        saveContraption(name);
+    });
+    
+    document.getElementById('loadBtn').addEventListener('click', () => {
+        const name = document.getElementById('savedList').value;
+        loadContraption(name);
+    });
+    
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+        const name = document.getElementById('savedList').value;
+        deleteContraption(name);
+    });
+    
+    // Allow Enter key in save name input
+    document.getElementById('saveName').addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            const name = document.getElementById('saveName').value;
+            saveContraption(name);
+        }
+    });
+    
+    // Refresh saved list on page load
+    refreshSavedList();
+    
     // Keyboard controls for rotating ramps and undo/redo
     document.addEventListener('keydown', (event) => {
         // Undo/Redo shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z)
@@ -975,6 +1002,207 @@ function deleteObject(body) {
     
     // Update the object counter after deletion
     updateObjectCounter();
+}
+
+/**
+ * Helper function to determine object type from a body
+ * @param {Body} body - The Matter.js body
+ * @returns {string} - The object type string
+ */
+function getObjectType(body) {
+    // Check for seesaw parts
+    if (body.label === LABEL_SEESAW_PIVOT || body.label === LABEL_SEESAW_PLANK) {
+        return 'seesaw';
+    }
+    
+    // Check for ball (has circleRadius)
+    if (body.circleRadius) {
+        return 'ball';
+    }
+    
+    // Check for static objects
+    if (body.isStatic) {
+        const width = body.bounds.max.x - body.bounds.min.x;
+        // Platform is wider than ramp
+        return width > 140 ? 'platform' : 'ramp';
+    }
+    
+    // Check dynamic objects by height
+    const height = body.bounds.max.y - body.bounds.min.y;
+    return height > 50 ? 'domino' : 'box';
+}
+
+/**
+ * Save current contraption design to localStorage
+ * @param {string} name - Name for the saved design
+ */
+function saveContraption(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please enter a name for your design');
+        alert('Please enter a name for your design!');
+        return;
+    }
+    
+    name = name.trim();
+    
+    // Collect all unique objects (avoid duplicating seesaw parts)
+    const processedSeesaws = new Set();
+    const objectsData = [];
+    
+    placedObjects.forEach(obj => {
+        // Handle seesaws specially
+        if ((obj.label === LABEL_SEESAW_PIVOT || obj.label === LABEL_SEESAW_PLANK) && obj.seesawId !== undefined) {
+            // Only save seesaw once using pivot
+            if (obj.label === LABEL_SEESAW_PIVOT && !processedSeesaws.has(obj.seesawId)) {
+                processedSeesaws.add(obj.seesawId);
+                objectsData.push({
+                    type: 'seesaw',
+                    x: obj.position.x,
+                    y: obj.position.y,
+                    angle: 0,
+                    seesawId: obj.seesawId
+                });
+            }
+        } else {
+            // Regular object
+            objectsData.push({
+                type: getObjectType(obj),
+                x: obj.position.x,
+                y: obj.position.y,
+                angle: obj.angle
+            });
+        }
+    });
+    
+    const design = {
+        version: 1,
+        timestamp: Date.now(),
+        name: name,
+        objects: objectsData
+    };
+    
+    try {
+        localStorage.setItem(`doomberg_${name}`, JSON.stringify(design));
+        updateStatus(`Saved: ${name}`);
+        refreshSavedList();
+        document.getElementById('saveName').value = '';
+    } catch (e) {
+        updateStatus('Failed to save: Storage limit exceeded');
+        alert('Failed to save: Your browser storage is full. Please delete some saved designs.');
+        console.error('Save error:', e);
+    }
+}
+
+/**
+ * Load a contraption design from localStorage
+ * @param {string} name - Name of the saved design to load
+ */
+function loadContraption(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please select a design to load');
+        return;
+    }
+    
+    name = name.trim();
+    
+    try {
+        const data = localStorage.getItem(`doomberg_${name}`);
+        if (!data) {
+            updateStatus(`Design not found: ${name}`);
+            alert(`Design not found: ${name}`);
+            return;
+        }
+        
+        const design = JSON.parse(data);
+        
+        // Verify version
+        if (design.version !== 1) {
+            updateStatus('Incompatible design version');
+            alert('This design was saved with an incompatible version.');
+            return;
+        }
+        
+        // Clear existing objects
+        clearAll();
+        
+        // Recreate objects
+        design.objects.forEach(objData => {
+            placeObject(objData.type, objData.x, objData.y);
+            
+            // For ramps, restore the angle
+            if (objData.type === 'ramp' && objData.angle !== undefined) {
+                const lastObject = placedObjects[placedObjects.length - 1];
+                if (lastObject && !lastObject.label) {
+                    Body.setAngle(lastObject, objData.angle);
+                    lastObject.originalAngle = objData.angle;
+                }
+            }
+        });
+        
+        updateStatus(`Loaded: ${name} (${design.objects.length} objects)`);
+    } catch (e) {
+        updateStatus('Failed to load design');
+        alert('Failed to load design: The data may be corrupted.');
+        console.error('Load error:', e);
+    }
+}
+
+/**
+ * Get list of all saved contraption names
+ * @returns {Array<string>} Array of saved design names
+ */
+function listSavedContraptions() {
+    const keys = Object.keys(localStorage);
+    return keys
+        .filter(k => k.startsWith('doomberg_'))
+        .map(k => k.replace('doomberg_', ''))
+        .sort();
+}
+
+/**
+ * Delete a saved contraption from localStorage
+ * @param {string} name - Name of the design to delete
+ */
+function deleteContraption(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please select a design to delete');
+        return;
+    }
+    
+    name = name.trim();
+    
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+        return;
+    }
+    
+    try {
+        localStorage.removeItem(`doomberg_${name}`);
+        updateStatus(`Deleted: ${name}`);
+        refreshSavedList();
+        document.getElementById('savedList').value = '';
+    } catch (e) {
+        updateStatus('Failed to delete design');
+        console.error('Delete error:', e);
+    }
+}
+
+/**
+ * Refresh the saved designs dropdown list
+ */
+function refreshSavedList() {
+    const savedList = document.getElementById('savedList');
+    const savedNames = listSavedContraptions();
+    
+    // Clear current options except the first one
+    savedList.innerHTML = '<option value="">-- Select saved design --</option>';
+    
+    // Add saved designs
+    savedNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        savedList.appendChild(option);
+    });
 }
 
 // Initialize game when page loads
