@@ -1118,14 +1118,14 @@ High Value, Low Effort:
 
 High Value, High Effort:
 - ✅ Save/load system (COMPLETED Feb 2026)
+- ✅ More object types (COMPLETED Feb 2026)
 - Level system
 - Mobile support
-- More object types
 
 Medium Value, Medium Effort:
 - ✅ Scoring system (COMPLETED Feb 2026)
-- Grid toggle
-- Sound effects
+- ✅ Grid toggle (COMPLETED Feb 2026)
+- ✅ Sound effects (COMPLETED Feb 2026)
 
 Low Value, Low Effort:
 - Theme system
