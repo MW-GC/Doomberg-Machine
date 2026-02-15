@@ -1,0 +1,26 @@
+theme: jekyll-theme-cayman
+title: Doomberg Machine
+description: Build creative Rube Goldberg machines to doom the innocent NPC! A browser-based 2D physics puzzle game powered by Matter.js.
+show_downloads: true
+google_analytics: 
+github:
+  repository_url: https://github.com/MW-GC/Doomberg-Machine
+  owner_name: MW-GC
+  owner_url: https://github.com/MW-GC
+
+# Build settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Exclude from processing
+exclude:
+  - node_modules/
+  - package.json
+  - package-lock.json
+  - matter.min.js
+  - game.js
+  - style.css
+  - .gitignore
+  - README.md
