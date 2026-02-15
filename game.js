@@ -95,6 +95,12 @@ function drawGrid(context) {
 const DEFAULT_RAMP_ANGLE = normalizeAngle(-17 * Math.PI / 180); // -17 degrees, normalized to [0, 2π)
 const ROTATION_INCREMENT = Math.PI / 12; // 15 degrees per key press
 
+// Mobile detection
+const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           window.innerWidth < 768;
+};
+
 // Game variables
 let engine;
 let render;
@@ -112,6 +118,12 @@ let placedObjects = [];
 let placedConstraints = [];
 let currentRampAngle = DEFAULT_RAMP_ANGLE;
 let seesawIdCounter = 0; // Counter for unique seesaw IDs
+
+// Mobile touch variables
+let touchStartTime = 0;
+let touchStartPos = { x: 0, y: 0 };
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 500; // ms for long press to delete
 
 // Undo/Redo system
 let actionHistory = [];
@@ -295,6 +307,33 @@ function loadSoundPreference() {
     updateSoundButton();
 }
 
+/**
+ * Apply mobile-specific UI adjustments
+ */
+function applyMobileUI() {
+    // Update instructions text for mobile
+    const instructions = document.querySelector('.instructions');
+    if (instructions) {
+        const mobileInstructions = `
+            <h3>Mobile Instructions:</h3>
+            <ol>
+                <li>Tap on an object type to select it</li>
+                <li>Tap on the canvas to place objects</li>
+                <li>Long-press on objects to delete them</li>
+                <li>Use Undo and Redo buttons to reverse actions</li>
+                <li>Build a contraption that will hit the NPC (red figure on the right)</li>
+                <li>Tap "Run Machine" to start the physics simulation</li>
+                <li>Use Pause or Slow-Mo to control playback</li>
+                <li>Watch your machine doom the NPC! 💀</li>
+            </ol>
+        `;
+        instructions.innerHTML = mobileInstructions;
+    }
+    
+    // Add mobile class to body for CSS targeting
+    document.body.classList.add('mobile-device');
+}
+
 // Initialize the game
 function init() {
     canvas = document.getElementById('gameCanvas');
@@ -304,9 +343,15 @@ function init() {
     world = engine.world;
     world.gravity.y = 1;
     
-    // Increase iterations to prevent fast objects from tunneling through static bodies
-    engine.positionIterations = POSITION_ITERATIONS;
-    engine.velocityIterations = VELOCITY_ITERATIONS;
+    // Adjust physics iterations based on device capabilities
+    if (isMobile()) {
+        // Reduce iterations on mobile for better performance
+        engine.positionIterations = 8;
+        engine.velocityIterations = 4;
+    } else {
+        engine.positionIterations = POSITION_ITERATIONS;
+        engine.velocityIterations = VELOCITY_ITERATIONS;
+    }
     
     // Create renderer
     render = Render.create({
@@ -316,9 +361,16 @@ function init() {
             width: CANVAS_WIDTH,
             height: CANVAS_HEIGHT,
             wireframes: false,
-            background: '#87CEEB'
+            background: '#87CEEB',
+            // Optimize rendering for mobile
+            pixelRatio: isMobile() ? 1 : window.devicePixelRatio || 1
         }
     });
+    
+    // Apply mobile-specific UI adjustments
+    if (isMobile()) {
+        applyMobileUI();
+    }
     
     // Create ground
     const ground = Bodies.rectangle(CANVAS_WIDTH / 2, CANVAS_HEIGHT - GROUND_HEIGHT / 2, CANVAS_WIDTH, GROUND_HEIGHT, {
@@ -539,6 +591,89 @@ function setupMouseControl() {
         
         deleteObjectAtPosition(x, y);
     });
+    
+    // Touch controls for mobile
+    setupTouchControls();
+}
+
+function setupTouchControls() {
+    // Prevent default touch behaviors to avoid zooming/scrolling
+    canvas.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+        
+        if (event.touches.length === 1) {
+            // Single touch - placement or long press to delete
+            const touch = event.touches[0];
+            touchStartTime = Date.now();
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            touchStartPos.x = (touch.clientX - rect.left) * scaleX;
+            touchStartPos.y = (touch.clientY - rect.top) * scaleY;
+            
+            // Start long press timer for delete
+            if (!isRunning) {
+                longPressTimer = setTimeout(() => {
+                    // Long press detected - delete object
+                    deleteObjectAtPosition(touchStartPos.x, touchStartPos.y);
+                    longPressTimer = null;
+                    
+                    // Visual feedback with vibration if supported
+                    if (navigator.vibrate) {
+                        navigator.vibrate(50);
+                    }
+                }, LONG_PRESS_DURATION);
+            }
+        }
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (event) => {
+        event.preventDefault();
+        
+        // Cancel long press timer if finger moves
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', (event) => {
+        event.preventDefault();
+        
+        // Clear long press timer if still active
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+        
+        const touchDuration = Date.now() - touchStartTime;
+        
+        // Short tap - place object (if not a long press)
+        if (touchDuration < LONG_PRESS_DURATION && !isRunning && selectedTool) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            
+            let x = touchStartPos.x;
+            let y = touchStartPos.y;
+            
+            // Apply snap-to-grid if enabled
+            ({ x, y } = snapToGrid(x, y));
+            
+            placeObject(selectedTool, x, y);
+        }
+    }, { passive: false });
+    
+    canvas.addEventListener('touchcancel', (event) => {
+        event.preventDefault();
+        
+        // Clear long press timer
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+    }, { passive: false });
 }
 
 function setupEventListeners() {
