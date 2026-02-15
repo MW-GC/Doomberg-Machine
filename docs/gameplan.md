@@ -822,7 +822,24 @@ trackEvent('game', 'doom', 'success');
 
 ### 🐛 Bug Fixes & Quality
 
-#### 19. Known Issues
+#### 19. Recently Fixed Issues
+
+**✅ Issue: NPC disappears when simulation starts** (Fixed: Feb 2026)
+- **Cause**: CSS background gradient on canvas was rendering over canvas content, and NPC was positioned floating above ground causing physics phase-through
+- **Fix**: 
+  1. Removed CSS `background: linear-gradient(...)` from `#gameCanvas` 
+  2. Repositioned NPC to stand directly on ground surface
+  3. Extracted positioning constants (`NPC_LEG_OFFSET`, `NPC_HALF_LEG_HEIGHT`) for maintainability
+```javascript
+// NPC now positioned on ground from start
+const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;
+const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;
+```
+- **Result**: NPC remains visible throughout gameplay, physics interactions work correctly
+
+---
+
+#### 20. Known Issues
 
 **Issue: Objects sometimes pass through static bodies at high velocity**
 - **Cause**: Matter.js tunneling issue
@@ -855,7 +872,7 @@ if (placedObjects.length >= MAX_OBJECTS) {
 
 ---
 
-#### 20. Accessibility Improvements
+#### 21. Accessibility Improvements
 
 **Screen Reader Support**:
 - Add ARIA labels to interactive elements
