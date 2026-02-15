@@ -16,6 +16,7 @@ const CANVAS_HEIGHT = 600;
 const GROUND_HEIGHT = 20;
 const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
+const MAX_HISTORY_SIZE = 50; // Maximum undo/redo history entries to prevent memory leaks
 
 // Object labels
 const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
@@ -54,6 +55,12 @@ let placedObjects = [];
 let placedConstraints = [];
 let currentRampAngle = DEFAULT_RAMP_ANGLE;
 let seesawIdCounter = 0; // Counter for unique seesaw IDs
+
+// Undo/Redo system
+let actionHistory = [];
+let historyIndex = -1;
+
+
 
 // Initialize the game
 function init() {
@@ -207,7 +214,6 @@ function setupMouseControl() {
     // Right-click to delete objects
     canvas.addEventListener('contextmenu', (event) => {
         event.preventDefault();
-        
         if (isRunning) return;
         
         const rect = canvas.getBoundingClientRect();
@@ -241,11 +247,30 @@ function setupEventListeners() {
     document.getElementById('runBtn').addEventListener('click', runMachine);
     document.getElementById('resetBtn').addEventListener('click', resetMachine);
     document.getElementById('clearBtn').addEventListener('click', clearAll);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
     
-    // Keyboard controls for rotating ramps
+    // Keyboard controls for rotating ramps and undo/redo
     document.addEventListener('keydown', (event) => {
+        // Undo/Redo shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z)
+        if ((event.ctrlKey || event.metaKey) && !isRunning) {
+            if (event.shiftKey && (event.key === 'z' || event.key === 'Z')) {
+                event.preventDefault();
+                redo();
+                return;
+            } else if (event.key === 'z' || event.key === 'Z') {
+                event.preventDefault();
+                undo();
+                return;
+            } else if (event.key === 'y' || event.key === 'Y') {
+                event.preventDefault();
+                redo();
+                return;
+            }
+        }
+        
         // Space key for pause/unpause
         if (event.key === ' ') {
             if (isRunning) {
@@ -254,7 +279,8 @@ function setupEventListeners() {
             }
             return;
         }
-        
+      
+        // Ramp rotation controls
         if (isRunning || selectedTool !== 'ramp') return;
         
         if (event.key === 'q' || event.key === 'Q') {
@@ -274,6 +300,262 @@ function rotateRamp(angleChange) {
     // Display angle in degrees, wrapped to [0, 359]
     const degrees = Math.round(currentRampAngle * 180 / Math.PI) % 360;
     updateStatus(`Ramp angle: ${degrees}°`);
+}
+
+function recordAction(action) {
+    // Clear any future history if we're not at the end
+    actionHistory = actionHistory.slice(0, historyIndex + 1);
+    actionHistory.push(action);
+    historyIndex++;
+    
+    // Prune old history if it exceeds MAX_HISTORY_SIZE
+    // Keep only the most recent MAX_HISTORY_SIZE entries
+    if (actionHistory.length > MAX_HISTORY_SIZE) {
+        const overflow = actionHistory.length - MAX_HISTORY_SIZE;
+        actionHistory = actionHistory.slice(overflow);
+        historyIndex -= overflow;
+    }
+    
+    updateUndoRedoButtons();
+}
+
+function undo() {
+    if (isRunning || historyIndex < 0) {
+        if (historyIndex < 0) {
+            updateStatus('Nothing to undo');
+        }
+        return;
+    }
+    
+    const action = actionHistory[historyIndex];
+    revertAction(action);
+    historyIndex--;
+    updateUndoRedoButtons();
+    updateStatus('Undone');
+}
+
+function redo() {
+    if (isRunning || historyIndex >= actionHistory.length - 1) {
+        if (historyIndex >= actionHistory.length - 1) {
+            updateStatus('Nothing to redo');
+        }
+        return;
+    }
+    
+    historyIndex++;
+    const action = actionHistory[historyIndex];
+    applyAction(action);
+    updateUndoRedoButtons();
+    updateStatus('Redone');
+}
+
+/**
+ * Helper function to create a seesaw with all its components
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {number} seesawId - Unique ID for the seesaw (if null, generates new one)
+ * @returns {{pivot: Body, plank: Body, constraint: Constraint}} The created seesaw components
+ */
+function createSeesaw(x, y, seesawId = null) {
+    // Use provided ID or generate new one
+    if (seesawId === null) {
+        seesawId = seesawIdCounter++;
+    }
+    
+    const pivot = Bodies.rectangle(x, y, 10, 40, {
+        isStatic: true,
+        label: LABEL_SEESAW_PIVOT,
+        render: { fillStyle: '#AA8976' }
+    });
+    
+    const plank = Bodies.rectangle(x, y - 20, 120, 10, {
+        density: 0.05,
+        label: LABEL_SEESAW_PLANK,
+        render: { fillStyle: '#EAAC8B' }
+    });
+    
+    // Store original positions
+    pivot.originalPosition = { x: x, y: y };
+    pivot.originalAngle = 0;
+    pivot.seesawId = seesawId;
+    
+    plank.originalPosition = { x: x, y: y - 20 };
+    plank.originalAngle = 0;
+    plank.seesawId = seesawId;
+    
+    // Create constraint
+    const constraint = Matter.Constraint.create({
+        bodyA: pivot,
+        bodyB: plank,
+        length: 0,
+        stiffness: 0.9
+    });
+    constraint.seesawId = seesawId;
+    
+    // Add to world
+    Composite.add(world, [pivot, plank, constraint]);
+    placedObjects.push(pivot, plank);
+    placedConstraints.push(constraint);
+    
+    return { pivot, plank, constraint };
+}
+
+/**
+ * Helper function to remove a seesaw by its ID
+ * @param {number} seesawId - The unique ID of the seesaw to remove
+ */
+function removeSeesaw(seesawId) {
+    const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
+    const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
+    const constraint = placedConstraints.find(c => c.seesawId === seesawId);
+    
+    if (pivot) {
+        Composite.remove(world, pivot);
+        placedObjects = placedObjects.filter(obj => obj !== pivot);
+    }
+    if (plank) {
+        Composite.remove(world, plank);
+        placedObjects = placedObjects.filter(obj => obj !== plank);
+    }
+    if (constraint) {
+        Composite.remove(world, constraint);
+        placedConstraints = placedConstraints.filter(c => c !== constraint);
+    }
+}
+
+function revertAction(action) {
+    if (action.type === 'place') {
+        // Remove the placed object(s)
+        if (action.objectType === 'seesaw') {
+            // Find and remove seesaw parts by seesawId
+            removeSeesaw(action.seesawId);
+        } else {
+            // Remove single object
+            const body = action.body;
+            if (body && placedObjects.includes(body)) {
+                Composite.remove(world, body);
+                placedObjects = placedObjects.filter(obj => obj !== body);
+            }
+        }
+    } else if (action.type === 'delete') {
+        // Re-add the deleted object(s)
+        if (action.objectType === 'seesaw') {
+            // Recreate seesaw
+            const { pivot, plank, constraint } = createSeesaw(action.x, action.y, action.seesawId);
+            
+            // Store references in action for potential future operations
+            action.pivot = pivot;
+            action.plank = plank;
+            action.constraint = constraint;
+        } else {
+            // Recreate single object
+            const body = recreateBody(action.objectType, action.x, action.y, action.angle);
+            if (body) {
+                body.originalPosition = { x: action.x, y: action.y };
+                body.originalAngle = action.angle;
+                Composite.add(world, body);
+                placedObjects.push(body);
+                action.body = body; // Store reference for future operations
+            }
+        }
+    }
+    updateObjectCounter();
+}
+
+function applyAction(action) {
+    if (action.type === 'place') {
+        // Re-add the object(s)
+        if (action.objectType === 'seesaw') {
+            // Recreate seesaw
+            const { pivot, plank, constraint } = createSeesaw(action.x, action.y, action.seesawId);
+            
+            // Store references in action
+            action.pivot = pivot;
+            action.plank = plank;
+            action.constraint = constraint;
+        } else {
+            // Recreate single object
+            const body = recreateBody(action.objectType, action.x, action.y, action.angle);
+            if (body) {
+                body.originalPosition = { x: action.x, y: action.y };
+                body.originalAngle = action.angle;
+                Composite.add(world, body);
+                placedObjects.push(body);
+                action.body = body; // Store reference
+            }
+        }
+    } else if (action.type === 'delete') {
+        // Remove the object(s) again
+        if (action.objectType === 'seesaw') {
+            removeSeesaw(action.seesawId);
+        } else {
+            const body = action.body;
+            if (body && placedObjects.includes(body)) {
+                Composite.remove(world, body);
+                placedObjects = placedObjects.filter(obj => obj !== body);
+            }
+        }
+    }
+    updateObjectCounter();
+}
+
+function recreateBody(type, x, y, angle) {
+    let body;
+    
+    switch(type) {
+        case 'ball':
+            body = Bodies.circle(x, y, 20, {
+                restitution: 0.8,
+                density: 0.04,
+                render: { fillStyle: '#FF6B6B' }
+            });
+            break;
+        case 'box':
+            body = Bodies.rectangle(x, y, 40, 40, {
+                restitution: 0.3,
+                density: 0.05,
+                render: { fillStyle: '#A0522D' }
+            });
+            break;
+        case 'domino':
+            body = Bodies.rectangle(x, y, 10, 60, {
+                restitution: 0.1,
+                density: 0.05,
+                render: { fillStyle: '#4ECDC4' }
+            });
+            break;
+        case 'ramp':
+            body = Bodies.rectangle(x, y, 120, 10, {
+                isStatic: true,
+                angle: angle,
+                render: { fillStyle: '#95E1D3' }
+            });
+            break;
+        case 'platform':
+            body = Bodies.rectangle(x, y, 150, 10, {
+                isStatic: true,
+                render: { fillStyle: '#F38181' }
+            });
+            break;
+    }
+    
+    if (body && angle) {
+        Body.setAngle(body, angle);
+    }
+    
+    return body;
+}
+
+function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    
+    if (undoBtn) {
+        undoBtn.disabled = historyIndex < 0 || isRunning;
+    }
+    if (redoBtn) {
+        redoBtn.disabled = historyIndex >= actionHistory.length - 1 || isRunning;
+    }
 }
 
 function placeObject(type, x, y) {
@@ -330,44 +612,23 @@ function placeObject(type, x, y) {
             break;
             
         case 'seesaw':
-            // Create seesaw as two bodies - the pivot and the plank
-            const pivot = Bodies.rectangle(x, y, 10, 40, {
-                isStatic: true,
-                label: LABEL_SEESAW_PIVOT,
-                render: {
-                    fillStyle: '#AA8976'
-                }
-            });
-            const plank = Bodies.rectangle(x, y - 20, 120, 10, {
-                density: 0.05,
-                label: LABEL_SEESAW_PLANK,
-                render: {
-                    fillStyle: '#EAAC8B'
-                }
-            });
+            // Create seesaw using helper function
+            const { pivot, plank, constraint } = createSeesaw(x, y);
+            const seesawId = pivot.seesawId; // Get the generated ID
             
-            // Link the parts together for deletion using a unique ID
-            const seesawId = ++seesawIdCounter;
-            pivot.seesawId = seesawId;
-            plank.seesawId = seesawId;
-            
-            // Store original positions
-            pivot.originalPosition = { x: pivot.position.x, y: pivot.position.y };
-            pivot.originalAngle = pivot.angle;
-            plank.originalPosition = { x: plank.position.x, y: plank.position.y };
-            plank.originalAngle = plank.angle;
-            
-            // Add constraint to make it rotate around pivot
-            const constraint = Matter.Constraint.create({
-                bodyA: pivot,
-                bodyB: plank,
-                length: 0,
-                stiffness: 0.9
+            // Record action for undo/redo
+            recordAction({
+                type: 'place',
+                objectType: 'seesaw',
+                x: x,
+                y: y,
+                angle: 0,
+                seesawId: seesawId,
+                pivot: pivot,
+                plank: plank,
+                constraint: constraint
             });
             
-            Composite.add(world, [pivot, plank, constraint]);
-            placedObjects.push(pivot, plank);
-            placedConstraints.push(constraint);
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
             updateObjectCounter();
             return;
@@ -380,6 +641,17 @@ function placeObject(type, x, y) {
         
         Composite.add(world, body);
         placedObjects.push(body);
+        
+        // Record action for undo/redo
+        recordAction({
+            type: 'place',
+            objectType: type,
+            x: body.position.x,
+            y: body.position.y,
+            angle: body.angle,
+            body: body
+        });
+        
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
         updateObjectCounter();
     }
@@ -406,12 +678,14 @@ function runMachine() {
     Runner.run(runner, engine);
     
     document.getElementById('runBtn').disabled = true;
+
     document.getElementById('pauseBtn').disabled = false;
     document.getElementById('slowMotionBtn').disabled = false;
     
     // Ensure slow-motion button reflects state
     document.getElementById('slowMotionBtn').classList.remove('active');
-    
+  
+    updateUndoRedoButtons();
     updatePauseButtonText();
     updateSlowMotionButtonText();
     updateStatus('Machine running! Watch the chaos unfold...');
@@ -545,6 +819,7 @@ function resetMachine() {
     document.getElementById('pauseBtn').disabled = true;
     document.getElementById('slowMotionBtn').disabled = true;
     document.getElementById('slowMotionBtn').classList.remove('active');
+    updateUndoRedoButtons();
     updatePauseButtonText();
     updateSlowMotionButtonText();
     
@@ -565,6 +840,11 @@ function clearAll() {
     });
     placedObjects = [];
     placedConstraints = [];
+    
+    // Clear undo/redo history
+    actionHistory = [];
+    historyIndex = -1;
+    updateUndoRedoButtons();
     
     // Reset if running
     if (isRunning) {
@@ -609,30 +889,56 @@ function deleteObject(body) {
     if (isSeesawPart) {
         // Find all parts of this seesaw using the seesawId
         const seesawId = body.seesawId;
-        const seesawBodies = placedObjects.filter(obj => obj.seesawId === seesawId);
+        const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
+        const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
+        const constraint = placedConstraints.find(c => c.seesawId === seesawId);
         
-        // Find constraints connecting these bodies
-        const relatedConstraints = placedConstraints.filter(constraint => {
-            return seesawBodies.includes(constraint.bodyA) || seesawBodies.includes(constraint.bodyB);
+        // Record deletion for undo
+        recordAction({
+            type: 'delete',
+            objectType: 'seesaw',
+            x: pivot ? pivot.position.x : body.position.x,
+            y: pivot ? pivot.position.y : body.position.y,
+            angle: 0,
+            seesawId: seesawId,
+            pivot: pivot,
+            plank: plank,
+            constraint: constraint
         });
         
-        // Remove all seesaw parts and constraints
-        seesawBodies.forEach(b => {
-            Composite.remove(world, b);
-            placedObjects = placedObjects.filter(obj => obj !== b);
-        });
-        
-        relatedConstraints.forEach(c => {
-            Composite.remove(world, c);
-            placedConstraints = placedConstraints.filter(constraint => constraint !== c);
-        });
+        // Remove seesaw using helper function
+        removeSeesaw(seesawId);
         
         updateStatus('Deleted seesaw');
     } else {
+        // Determine object type from body properties
+        let objectType;
+        if (body.circleRadius) {
+            objectType = 'ball';
+        } else if (body.isStatic) {
+            // Check dimensions to distinguish ramp from platform
+            const width = body.bounds.max.x - body.bounds.min.x;
+            objectType = width > 140 ? 'platform' : 'ramp';
+        } else {
+            // Check dimensions to distinguish box from domino
+            const height = body.bounds.max.y - body.bounds.min.y;
+            objectType = height > 50 ? 'domino' : 'box';
+        }
+        
+        // Record deletion for undo
+        recordAction({
+            type: 'delete',
+            objectType: objectType,
+            x: body.position.x,
+            y: body.position.y,
+            angle: body.angle,
+            body: body
+        });
+        
         // Remove single object
         Composite.remove(world, body);
         placedObjects = placedObjects.filter(obj => obj !== body);
-        updateStatus('Deleted object');
+        updateStatus(`Deleted ${objectType}`);
     }
     
     // Update the object counter after deletion
