@@ -125,8 +125,12 @@ function init() {
 
 function createNPC() {
     // Create NPC as a compound body (head + body)
+    // Position NPC standing on the ground
     const npcX = CANVAS_WIDTH - 100;
-    const npcY = CANVAS_HEIGHT - 100;
+    // Calculate Y position so NPC stands on ground (ground top is at CANVAS_HEIGHT - GROUND_HEIGHT)
+    // Legs are 20 pixels tall, and positioned 35 pixels below body center
+    const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;
+    const npcY = groundTop - 35 - 10; // 35 for leg offset, 10 for half leg height
     
     // Body
     const body = Bodies.rectangle(npcX, npcY, 30, 50, {
