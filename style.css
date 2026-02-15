@@ -391,3 +391,244 @@ header p {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
+
+/* Level System Styles */
+.levels-btn {
+    background: #667eea;
+    color: white;
+    font-weight: bold;
+}
+
+.levels-btn:hover {
+    background: #5568d3;
+}
+
+.level-info {
+    display: none;
+    padding: 15px;
+    margin: 10px 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    color: white;
+}
+
+.level-info-header {
+    font-size: 1.2em;
+    margin-bottom: 8px;
+}
+
+.level-info-details {
+    display: flex;
+    gap: 15px;
+    font-size: 0.95em;
+    opacity: 0.9;
+}
+
+/* Level Selection Modal */
+.level-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1001;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.level-modal.show {
+    opacity: 1;
+}
+
+.level-modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    animation: levelModalSlideIn 0.4s ease-out;
+}
+
+@keyframes levelModalSlideIn {
+    from {
+        transform: translateY(-30px) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.level-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.level-modal-header h2 {
+    color: #667eea;
+    font-size: 2em;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 5px 10px;
+    transition: all 0.3s ease;
+}
+
+.close-btn:hover {
+    color: #dc3545;
+    transform: scale(1.1);
+}
+
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.level-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px solid #dee2e6;
+    border-radius: 15px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.level-card:hover:not(.locked) {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+    border-color: #667eea;
+}
+
+.level-card.completed {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-color: #28a745;
+}
+
+.level-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #f8f9fa 0%, #dee2e6 100%);
+}
+
+.level-number {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 10px;
+}
+
+.level-card.completed .level-number {
+    color: #28a745;
+}
+
+.level-card.locked .level-number {
+    color: #6c757d;
+}
+
+.level-name {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.level-desc {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-bottom: 12px;
+    min-height: 40px;
+}
+
+.level-stars {
+    font-size: 1.5em;
+    letter-spacing: 3px;
+    margin-top: 10px;
+}
+
+.level-best-score {
+    font-size: 0.9em;
+    color: #667eea;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.level-modal-footer {
+    text-align: center;
+    padding-top: 20px;
+    border-top: 2px solid #e9ecef;
+}
+
+.level-modal-footer .action-btn {
+    padding: 12px 30px;
+    font-size: 1.1em;
+}
+
+/* Score Modal Button Adjustments for Level Mode */
+#scoreModalButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#scoreModalButtons .action-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.1em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#scoreModalButtons .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+#nextLevelBtn {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+#nextLevelBtn:hover {
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+}
+
+/* Responsive Design for Level Modal */
+@media (max-width: 768px) {
+    .level-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .level-modal-content {
+        padding: 20px;
+    }
+    
+    .level-modal-header h2 {
+        font-size: 1.5em;
+    }
+}
