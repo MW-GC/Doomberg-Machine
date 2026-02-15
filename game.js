@@ -16,6 +16,7 @@ const CANVAS_HEIGHT = 600;
 const GROUND_HEIGHT = 20;
 const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
+const MAX_HISTORY_SIZE = 50; // Maximum undo/redo history entries to prevent memory leaks
 
 // Object labels
 const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
@@ -306,6 +307,15 @@ function recordAction(action) {
     actionHistory = actionHistory.slice(0, historyIndex + 1);
     actionHistory.push(action);
     historyIndex++;
+    
+    // Prune old history if it exceeds MAX_HISTORY_SIZE
+    // Keep only the most recent MAX_HISTORY_SIZE entries
+    if (actionHistory.length > MAX_HISTORY_SIZE) {
+        const overflow = actionHistory.length - MAX_HISTORY_SIZE;
+        actionHistory = actionHistory.slice(overflow);
+        historyIndex -= overflow;
+    }
+    
     updateUndoRedoButtons();
 }
 
@@ -339,27 +349,86 @@ function redo() {
     updateStatus('Redone');
 }
 
+/**
+ * Helper function to create a seesaw with all its components
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {number} seesawId - Unique ID for the seesaw (if null, generates new one)
+ * @returns {{pivot: Body, plank: Body, constraint: Constraint}} The created seesaw components
+ */
+function createSeesaw(x, y, seesawId = null) {
+    // Use provided ID or generate new one
+    if (seesawId === null) {
+        seesawId = seesawIdCounter++;
+    }
+    
+    const pivot = Bodies.rectangle(x, y, 10, 40, {
+        isStatic: true,
+        label: LABEL_SEESAW_PIVOT,
+        render: { fillStyle: '#AA8976' }
+    });
+    
+    const plank = Bodies.rectangle(x, y - 20, 120, 10, {
+        density: 0.05,
+        label: LABEL_SEESAW_PLANK,
+        render: { fillStyle: '#EAAC8B' }
+    });
+    
+    // Store original positions
+    pivot.originalPosition = { x: x, y: y };
+    pivot.originalAngle = 0;
+    pivot.seesawId = seesawId;
+    
+    plank.originalPosition = { x: x, y: y - 20 };
+    plank.originalAngle = 0;
+    plank.seesawId = seesawId;
+    
+    // Create constraint
+    const constraint = Matter.Constraint.create({
+        bodyA: pivot,
+        bodyB: plank,
+        length: 0,
+        stiffness: 0.9
+    });
+    constraint.seesawId = seesawId;
+    
+    // Add to world
+    Composite.add(world, [pivot, plank, constraint]);
+    placedObjects.push(pivot, plank);
+    placedConstraints.push(constraint);
+    
+    return { pivot, plank, constraint };
+}
+
+/**
+ * Helper function to remove a seesaw by its ID
+ * @param {number} seesawId - The unique ID of the seesaw to remove
+ */
+function removeSeesaw(seesawId) {
+    const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
+    const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
+    const constraint = placedConstraints.find(c => c.seesawId === seesawId);
+    
+    if (pivot) {
+        Composite.remove(world, pivot);
+        placedObjects = placedObjects.filter(obj => obj !== pivot);
+    }
+    if (plank) {
+        Composite.remove(world, plank);
+        placedObjects = placedObjects.filter(obj => obj !== plank);
+    }
+    if (constraint) {
+        Composite.remove(world, constraint);
+        placedConstraints = placedConstraints.filter(c => c !== constraint);
+    }
+}
+
 function revertAction(action) {
     if (action.type === 'place') {
         // Remove the placed object(s)
         if (action.objectType === 'seesaw') {
             // Find and remove seesaw parts by seesawId
-            const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === action.seesawId);
-            const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === action.seesawId);
-            const constraint = placedConstraints.find(c => c.seesawId === action.seesawId);
-            
-            if (pivot) {
-                Composite.remove(world, pivot);
-                placedObjects = placedObjects.filter(obj => obj !== pivot);
-            }
-            if (plank) {
-                Composite.remove(world, plank);
-                placedObjects = placedObjects.filter(obj => obj !== plank);
-            }
-            if (constraint) {
-                Composite.remove(world, constraint);
-                placedConstraints = placedConstraints.filter(c => c !== constraint);
-            }
+            removeSeesaw(action.seesawId);
         } else {
             // Remove single object
             const body = action.body;
@@ -372,35 +441,7 @@ function revertAction(action) {
         // Re-add the deleted object(s)
         if (action.objectType === 'seesaw') {
             // Recreate seesaw
-            const pivot = Bodies.rectangle(action.x, action.y, 10, 40, {
-                isStatic: true,
-                render: { fillStyle: '#AA8976' },
-                label: LABEL_SEESAW_PIVOT
-            });
-            const plank = Bodies.rectangle(action.x, action.y - 20, 120, 10, {
-                density: 0.05,
-                render: { fillStyle: '#EAAC8B' },
-                label: LABEL_SEESAW_PLANK
-            });
-            
-            pivot.originalPosition = { x: action.x, y: action.y };
-            pivot.originalAngle = 0;
-            pivot.seesawId = action.seesawId;
-            plank.originalPosition = { x: action.x, y: action.y - 20 };
-            plank.originalAngle = 0;
-            plank.seesawId = action.seesawId;
-            
-            const constraint = Matter.Constraint.create({
-                bodyA: pivot,
-                bodyB: plank,
-                length: 0,
-                stiffness: 0.9
-            });
-            constraint.seesawId = action.seesawId;
-            
-            Composite.add(world, [pivot, plank, constraint]);
-            placedObjects.push(pivot, plank);
-            placedConstraints.push(constraint);
+            const { pivot, plank, constraint } = createSeesaw(action.x, action.y, action.seesawId);
             
             // Store references in action for potential future operations
             action.pivot = pivot;
@@ -418,6 +459,7 @@ function revertAction(action) {
             }
         }
     }
+    updateObjectCounter();
 }
 
 function applyAction(action) {
@@ -425,35 +467,7 @@ function applyAction(action) {
         // Re-add the object(s)
         if (action.objectType === 'seesaw') {
             // Recreate seesaw
-            const pivot = Bodies.rectangle(action.x, action.y, 10, 40, {
-                isStatic: true,
-                render: { fillStyle: '#AA8976' },
-                label: LABEL_SEESAW_PIVOT
-            });
-            const plank = Bodies.rectangle(action.x, action.y - 20, 120, 10, {
-                density: 0.05,
-                render: { fillStyle: '#EAAC8B' },
-                label: LABEL_SEESAW_PLANK
-            });
-            
-            pivot.originalPosition = { x: action.x, y: action.y };
-            pivot.originalAngle = 0;
-            pivot.seesawId = action.seesawId;
-            plank.originalPosition = { x: action.x, y: action.y - 20 };
-            plank.originalAngle = 0;
-            plank.seesawId = action.seesawId;
-            
-            const constraint = Matter.Constraint.create({
-                bodyA: pivot,
-                bodyB: plank,
-                length: 0,
-                stiffness: 0.9
-            });
-            constraint.seesawId = action.seesawId;
-            
-            Composite.add(world, [pivot, plank, constraint]);
-            placedObjects.push(pivot, plank);
-            placedConstraints.push(constraint);
+            const { pivot, plank, constraint } = createSeesaw(action.x, action.y, action.seesawId);
             
             // Store references in action
             action.pivot = pivot;
@@ -473,22 +487,7 @@ function applyAction(action) {
     } else if (action.type === 'delete') {
         // Remove the object(s) again
         if (action.objectType === 'seesaw') {
-            const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === action.seesawId);
-            const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === action.seesawId);
-            const constraint = placedConstraints.find(c => c.seesawId === action.seesawId);
-            
-            if (pivot) {
-                Composite.remove(world, pivot);
-                placedObjects = placedObjects.filter(obj => obj !== pivot);
-            }
-            if (plank) {
-                Composite.remove(world, plank);
-                placedObjects = placedObjects.filter(obj => obj !== plank);
-            }
-            if (constraint) {
-                Composite.remove(world, constraint);
-                placedConstraints = placedConstraints.filter(c => c !== constraint);
-            }
+            removeSeesaw(action.seesawId);
         } else {
             const body = action.body;
             if (body && placedObjects.includes(body)) {
@@ -497,6 +496,7 @@ function applyAction(action) {
             }
         }
     }
+    updateObjectCounter();
 }
 
 function recreateBody(type, x, y, angle) {
@@ -612,47 +612,9 @@ function placeObject(type, x, y) {
             break;
             
         case 'seesaw':
-            // Create seesaw as two bodies - the pivot and the plank
-            const pivot = Bodies.rectangle(x, y, 10, 40, {
-                isStatic: true,
-                label: LABEL_SEESAW_PIVOT,
-                render: {
-                    fillStyle: '#AA8976'
-                },
-                label: LABEL_SEESAW_PIVOT
-            });
-            const plank = Bodies.rectangle(x, y - 20, 120, 10, {
-                density: 0.05,
-                label: LABEL_SEESAW_PLANK,
-                render: {
-                    fillStyle: '#EAAC8B'
-                },
-                label: LABEL_SEESAW_PLANK
-            });
-            
-            // Assign unique seesaw ID
-            const seesawId = seesawIdCounter++;
-            pivot.seesawId = seesawId;
-            plank.seesawId = seesawId;
-            
-            // Store original positions
-            pivot.originalPosition = { x: pivot.position.x, y: pivot.position.y };
-            pivot.originalAngle = pivot.angle;
-            plank.originalPosition = { x: plank.position.x, y: plank.position.y };
-            plank.originalAngle = plank.angle;
-            
-            // Add constraint to make it rotate around pivot
-            const constraint = Matter.Constraint.create({
-                bodyA: pivot,
-                bodyB: plank,
-                length: 0,
-                stiffness: 0.9
-            });
-            constraint.seesawId = seesawId;
-            
-            Composite.add(world, [pivot, plank, constraint]);
-            placedObjects.push(pivot, plank);
-            placedConstraints.push(constraint);
+            // Create seesaw using helper function
+            const { pivot, plank, constraint } = createSeesaw(x, y);
+            const seesawId = pivot.seesawId; // Get the generated ID
             
             // Record action for undo/redo
             recordAction({
@@ -692,81 +654,6 @@ function placeObject(type, x, y) {
         
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
         updateObjectCounter();
-    }
-}
-
-function deleteObjectAtPosition(x, y) {
-    // Use Matter.js Query to find bodies at this position
-    const bodies = Matter.Query.point(placedObjects, { x, y });
-    
-    if (bodies.length > 0) {
-        const body = bodies[0];
-        
-        // Check if it's part of a seesaw
-        if (body.label === LABEL_SEESAW_PIVOT || body.label === LABEL_SEESAW_PLANK) {
-            const seesawId = body.seesawId;
-            const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
-            const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
-            const constraint = placedConstraints.find(c => c.seesawId === seesawId);
-            
-            // Record deletion for undo
-            recordAction({
-                type: 'delete',
-                objectType: 'seesaw',
-                x: pivot ? pivot.position.x : x,
-                y: pivot ? pivot.position.y : y,
-                angle: 0,
-                seesawId: seesawId,
-                pivot: pivot,
-                plank: plank,
-                constraint: constraint
-            });
-            
-            // Remove all seesaw parts
-            if (pivot) {
-                Composite.remove(world, pivot);
-                placedObjects = placedObjects.filter(obj => obj !== pivot);
-            }
-            if (plank) {
-                Composite.remove(world, plank);
-                placedObjects = placedObjects.filter(obj => obj !== plank);
-            }
-            if (constraint) {
-                Composite.remove(world, constraint);
-                placedConstraints = placedConstraints.filter(c => c !== constraint);
-            }
-            
-            updateStatus('Deleted seesaw');
-        } else {
-            // Determine object type from body properties
-            let objectType;
-            if (body.circleRadius) {
-                objectType = 'ball';
-            } else if (body.isStatic) {
-                // Check dimensions to distinguish ramp from platform
-                const width = body.bounds.max.x - body.bounds.min.x;
-                objectType = width > 140 ? 'platform' : 'ramp';
-            } else {
-                // Check dimensions to distinguish box from domino
-                const height = body.bounds.max.y - body.bounds.min.y;
-                objectType = height > 50 ? 'domino' : 'box';
-            }
-            
-            // Record deletion for undo
-            recordAction({
-                type: 'delete',
-                objectType: objectType,
-                x: body.position.x,
-                y: body.position.y,
-                angle: body.angle,
-                body: body
-            });
-            
-            // Remove the object
-            Composite.remove(world, body);
-            placedObjects = placedObjects.filter(obj => obj !== body);
-            updateStatus(`Deleted ${objectType}`);
-        }
     }
 }
 
@@ -1002,30 +889,56 @@ function deleteObject(body) {
     if (isSeesawPart) {
         // Find all parts of this seesaw using the seesawId
         const seesawId = body.seesawId;
-        const seesawBodies = placedObjects.filter(obj => obj.seesawId === seesawId);
+        const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
+        const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
+        const constraint = placedConstraints.find(c => c.seesawId === seesawId);
         
-        // Find constraints connecting these bodies
-        const relatedConstraints = placedConstraints.filter(constraint => {
-            return seesawBodies.includes(constraint.bodyA) || seesawBodies.includes(constraint.bodyB);
+        // Record deletion for undo
+        recordAction({
+            type: 'delete',
+            objectType: 'seesaw',
+            x: pivot ? pivot.position.x : body.position.x,
+            y: pivot ? pivot.position.y : body.position.y,
+            angle: 0,
+            seesawId: seesawId,
+            pivot: pivot,
+            plank: plank,
+            constraint: constraint
         });
         
-        // Remove all seesaw parts and constraints
-        seesawBodies.forEach(b => {
-            Composite.remove(world, b);
-            placedObjects = placedObjects.filter(obj => obj !== b);
-        });
-        
-        relatedConstraints.forEach(c => {
-            Composite.remove(world, c);
-            placedConstraints = placedConstraints.filter(constraint => constraint !== c);
-        });
+        // Remove seesaw using helper function
+        removeSeesaw(seesawId);
         
         updateStatus('Deleted seesaw');
     } else {
+        // Determine object type from body properties
+        let objectType;
+        if (body.circleRadius) {
+            objectType = 'ball';
+        } else if (body.isStatic) {
+            // Check dimensions to distinguish ramp from platform
+            const width = body.bounds.max.x - body.bounds.min.x;
+            objectType = width > 140 ? 'platform' : 'ramp';
+        } else {
+            // Check dimensions to distinguish box from domino
+            const height = body.bounds.max.y - body.bounds.min.y;
+            objectType = height > 50 ? 'domino' : 'box';
+        }
+        
+        // Record deletion for undo
+        recordAction({
+            type: 'delete',
+            objectType: objectType,
+            x: body.position.x,
+            y: body.position.y,
+            angle: body.angle,
+            body: body
+        });
+        
         // Remove single object
         Composite.remove(world, body);
         placedObjects = placedObjects.filter(obj => obj !== body);
-        updateStatus('Deleted object');
+        updateStatus(`Deleted ${objectType}`);
     }
     
     // Update the object counter after deletion
