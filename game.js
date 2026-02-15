@@ -47,6 +47,7 @@ let canvas;
 let selectedTool = null;
 let isRunning = false;
 let isPaused = false;
+let isSlowMotion = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
@@ -389,13 +390,14 @@ function runMachine() {
     
     isRunning = true;
     isPaused = false;
+    isSlowMotion = false;
     npcDoomed = false;
     
     // Make NPC dynamic
     Body.setStatic(npc, false);
     
     // Reset timeScale to normal
-    engine.timing.timeScale = 1.0;
+    applyTimeScale();
     
     // Create or reuse runner
     if (!runner) {
@@ -406,9 +408,23 @@ function runMachine() {
     document.getElementById('runBtn').disabled = true;
     document.getElementById('pauseBtn').disabled = false;
     document.getElementById('slowMotionBtn').disabled = false;
+    
+    // Ensure slow-motion button reflects state
+    document.getElementById('slowMotionBtn').classList.remove('active');
+    
     updatePauseButtonText();
     updateSlowMotionButtonText();
     updateStatus('Machine running! Watch the chaos unfold...');
+}
+
+function applyTimeScale() {
+    if (isPaused) {
+        engine.timing.timeScale = 0;
+    } else if (isSlowMotion) {
+        engine.timing.timeScale = 0.25;
+    } else {
+        engine.timing.timeScale = 1.0;
+    }
 }
 
 function togglePause() {
@@ -417,16 +433,10 @@ function togglePause() {
     isPaused = !isPaused;
     
     if (isPaused) {
-        engine.timing.timeScale = 0;
+        applyTimeScale();
         updateStatus('Simulation paused. Press Space or click Pause to resume.');
     } else {
-        // Resume at normal or slow-motion speed
-        const slowMotionBtn = document.getElementById('slowMotionBtn');
-        if (slowMotionBtn.classList.contains('active')) {
-            engine.timing.timeScale = 0.25;
-        } else {
-            engine.timing.timeScale = 1.0;
-        }
+        applyTimeScale();
         updateStatus('Machine running! Watch the chaos unfold...');
     }
     
@@ -436,25 +446,33 @@ function togglePause() {
 function toggleSlowMotion() {
     if (!isRunning) return;
     
-    const slowMotionBtn = document.getElementById('slowMotionBtn');
+    isSlowMotion = !isSlowMotion;
     
-    if (slowMotionBtn.classList.contains('active')) {
-        // Turn off slow motion
+    // Update UI to reflect state
+    const slowMotionBtn = document.getElementById('slowMotionBtn');
+    if (isSlowMotion) {
+        slowMotionBtn.classList.add('active');
+    } else {
         slowMotionBtn.classList.remove('active');
-        if (!isPaused) {
-            engine.timing.timeScale = 1.0;
-            updateStatus('Slow motion disabled. Running at normal speed.');
+    }
+    
+    // Apply timeScale if not paused
+    if (!isPaused) {
+        applyTimeScale();
+    }
+    
+    // Update status message
+    if (isSlowMotion) {
+        if (isPaused) {
+            updateStatus('Slow motion will be used when simulation resumes.');
         } else {
-            updateStatus('Normal speed will be used when simulation resumes.');
+            updateStatus('Slow motion enabled (25% speed).');
         }
     } else {
-        // Turn on slow motion
-        slowMotionBtn.classList.add('active');
-        if (!isPaused) {
-            engine.timing.timeScale = 0.25;
-            updateStatus('Slow motion enabled (25% speed).');
+        if (isPaused) {
+            updateStatus('Normal speed will be used when simulation resumes.');
         } else {
-            updateStatus('Slow motion will be used when simulation resumes.');
+            updateStatus('Slow motion disabled. Running at normal speed.');
         }
     }
     
@@ -521,6 +539,7 @@ function resetMachine() {
     
     isRunning = false;
     isPaused = false;
+    isSlowMotion = false;
     npcDoomed = false;
     document.getElementById('runBtn').disabled = false;
     document.getElementById('pauseBtn').disabled = true;
