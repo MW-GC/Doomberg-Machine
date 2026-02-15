@@ -18,6 +18,7 @@ const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
 const MAX_HISTORY_SIZE = 50; // Maximum undo/redo history entries to prevent memory leaks
 const GRID_SIZE = 40; // Grid cell size in pixels
+const GRID_LINE_COLOR = 'rgba(0, 0, 0, 0.1)'; // Subtle gray grid lines
 
 // Object labels
 const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
@@ -66,7 +67,7 @@ function snapToGrid(x, y) {
 function drawGrid(context) {
     if (!isGridEnabled) return;
     
-    context.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    context.strokeStyle = GRID_LINE_COLOR;
     context.lineWidth = 1;
     
     // Draw vertical lines
@@ -269,9 +270,7 @@ function setupMouseControl() {
         let y = (event.clientY - rect.top) * scaleY;
         
         // Apply snap-to-grid if enabled
-        const snapped = snapToGrid(x, y);
-        x = snapped.x;
-        y = snapped.y;
+        ({ x, y } = snapToGrid(x, y));
         
         placeObject(selectedTool, x, y);
     });
