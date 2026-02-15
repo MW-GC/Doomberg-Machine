@@ -181,6 +181,7 @@ function createParticles(x, y, type, velocity = 0) {
         case 'explosion':
             // Create radial explosion effect
             const explosionParticles = 50;
+            const explosionColors = ['#FF0000', '#FF6B6B', '#FFA500', '#FFD700', '#000000'];
             for (let i = 0; i < explosionParticles; i++) {
                 const angle = (i / explosionParticles) * Math.PI * 2;
                 const speed = Math.random() * 6 + 3;
@@ -191,7 +192,7 @@ function createParticles(x, y, type, velocity = 0) {
                     life: 60 + Math.random() * 30,
                     maxLife: 60 + Math.random() * 30,
                     size: Math.random() * 4 + 3,
-                    color: ['#FF0000', '#FF6B6B', '#FFA500', '#FFD700', '#000000'][i % 5]
+                    color: explosionColors[Math.floor(Math.random() * explosionColors.length)]
                 });
             }
             break;
