@@ -30,9 +30,9 @@ This document outlines potential improvements, fixes, and enhancements for the D
    - No tutorial or hints system
 
 2. **Gameplay Limitations**
-   - Only 6 object types
+   - Limited object variety (8 types: ball, box, domino, ramp, platform, seesaw, spring, explosive - could expand with more like fans, ropes, portals)
    - No progression or difficulty curve
-   - No scoring or challenge system
+   - ~~No scoring or challenge system~~ ✅ Scoring system added (Feb 2026)
    - Single static level
    - No replay functionality
 
@@ -289,17 +289,20 @@ function normalSpeed() {
 
 These features add significant value but require more effort.
 
-#### 6. More Object Types ✅ **IMPLEMENTED**
+#### 6. More Object Types 🔄 **IN PROGRESS**
 **Priority**: Medium  
 **Effort**: Medium per object  
 **Value**: High  
-**Status**: ✅ Completed (February 2026)
+**Status**: 🔄 In Progress (2/N objects completed)
 
 **Description**: Expand object variety with new physics-based objects
 
-**Implemented Objects**:
+**Completed Objects**:
 
-**Spring** 🌀 ✅
+##### 6.1 Spring Object 🌀 ✅ **COMPLETED**
+**Status**: ✅ Completed (February 2026)
+
+**Implementation**:
 ```javascript
 case 'spring':
     body = Bodies.circle(x, y, 15, {
@@ -309,11 +312,25 @@ case 'spring':
     });
     break;
 ```
-- Super-bouncy object with above-unity restitution
-- Creates dynamic chain reactions
-- Purple color for easy identification
 
-**Explosive** 💣 ✅
+**Features**:
+- Super-bouncy object with above-unity restitution (1.5)
+- Creates dynamic chain reactions
+- Purple color (#FF00FF) for easy identification
+- Integrated with undo/redo system
+- Save/load support
+
+**Benefits**:
+- Adds energy to contraptions
+- Enables complex chain reactions
+- Increases gameplay variety
+
+---
+
+##### 6.2 Explosive Object 💣 ✅ **COMPLETED**
+**Status**: ✅ Completed (February 2026)
+
+**Implementation**:
 ```javascript
 case 'explosive':
     body = Bodies.circle(x, y, 20, {
@@ -322,33 +339,33 @@ case 'explosive':
         render: { fillStyle: '#FF4500' },
         label: 'explosive'
     });
-    // Detonates on collision with sufficient force
+    // Detonates on collision with sufficient force (velocity > 1)
     break;
 ```
-- Explodes when hit with velocity > 1
-- Applies radial force to nearby objects
-- Uses `applyExplosionForce()` for realistic blast physics
-- Orange color for explosion effect
 
-**Features Delivered**:
-- ✅ Spring object with 1.5 restitution coefficient
-- ✅ Explosive object with collision-triggered detonation
-- ✅ Radial explosion force applied to nearby objects
-- ✅ Visual feedback (color change on detonation)
-- ✅ Proper cleanup and removal after detonation
-- ✅ Integration with undo/redo system
-- ✅ Save/load support for new object types
+**Features**:
+- Explodes when hit with velocity > 1
+- Applies radial force to nearby objects via `applyExplosionForce()`
+- Uses relative velocity calculation to detect impacts
+- Orange color (#FF4500) that changes on detonation (#FFA500)
+- `hasDetonated` flag prevents multiple detonations
+- Proper cleanup and removal after explosion
+- Integrated with undo/redo system
+- Save/load support
 
 **Benefits**:
-- ✅ Increased creative possibilities
-- ✅ More complex contraption designs
-- ✅ Enhanced gameplay variety
-- ✅ Chain reaction opportunities
+- Dramatic contraption climaxes
+- Area-of-effect physics interactions
+- Strategic placement gameplay
 
-**Future Object Ideas** (Not in this phase):
+---
+
+**Future Object Ideas** (Planned but not yet implemented):
 - Fan 💨 - Force field to push objects
-- Rope/Chain ⛓️ - Flexible connected segments
+- Rope/Chain ⛓️ - Flexible connected segments  
 - Portal 🌀 - Teleportation between two points
+- Magnet 🧲 - Attract/repel metal objects
+- Conveyor Belt 📦 - Moving platform
 
 ---
 
@@ -1078,13 +1095,16 @@ if (placedObjects.length >= MAX_OBJECTS) {
 
 ### Phase 2: Core Features (3-4 weeks)
 1. ✅ Save/load system (localStorage) - **COMPLETED**
-2. ✅ More object types (spring, explosive) - **COMPLETED**
+2. 🔄 More object types - **IN PROGRESS**
+   - ✅ Spring object - **COMPLETED**
+   - ✅ Explosive object - **COMPLETED**
+   - ⏳ Additional objects (fan, rope, portal, etc.) - **PLANNED**
 3. ✅ Scoring system - **COMPLETED**
 4. ✅ Grid/snap toggle - **COMPLETED**
 5. ✅ Sound effects - **COMPLETED**
 
 **Impact**: Major feature additions that enhance gameplay  
-**Status**: ✅ 5/5 completed (100%)
+**Status**: 🔄 Core items 5/5 completed, object variety expansion ongoing
 
 ### Phase 3: Content & Polish (4-6 weeks)
 1. Level system (10-15 levels)
@@ -1118,7 +1138,7 @@ High Value, Low Effort:
 
 High Value, High Effort:
 - ✅ Save/load system (COMPLETED Feb 2026)
-- ✅ More object types (COMPLETED Feb 2026)
+- 🔄 More object types (IN PROGRESS - Spring ✅, Explosive ✅)
 - Level system
 - Mobile support
 
