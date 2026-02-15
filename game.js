@@ -71,6 +71,38 @@ let seesawIdCounter = 0; // Counter for unique seesaw IDs
 let actionHistory = [];
 let historyIndex = -1;
 
+/**
+ * Apply explosion force to all nearby objects from an explosion center
+ * @param {number} explosionX - X coordinate of explosion center
+ * @param {number} explosionY - Y coordinate of explosion center
+ * @param {number} explosionRadius - Radius of explosion effect (default 150)
+ * @param {number} explosionForce - Force magnitude (default 0.08)
+ * @param {Matter.Body|null} explosiveBody - The body representing the explosive itself, which will be excluded from the explosion force
+ */
+function applyExplosionForce(explosionX, explosionY, explosionRadius = 150, explosionForce = 0.08, explosiveBody = null) {
+    // Get all bodies in the explosion radius
+    const allBodies = Composite.allBodies(world);
+    
+    allBodies.forEach(body => {
+        // Skip static bodies and the explosive itself
+        if (body.isStatic || body === explosiveBody) return;
+        
+        const dx = body.position.x - explosionX;
+        const dy = body.position.y - explosionY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Apply force if within radius
+        if (distance < explosionRadius && distance > 0) {
+            // Calculate force direction (normalized)
+            const forceMagnitude = explosionForce * (1 - distance / explosionRadius);
+            const forceX = (dx / distance) * forceMagnitude;
+            const forceY = (dy / distance) * forceMagnitude;
+            
+            // Apply the force at the body's position
+            Body.applyForce(body, body.position, { x: forceX, y: forceY });
+        }
+    });
+}
 
 
 // Initialize the game
@@ -136,6 +168,41 @@ function init() {
         const pairs = event.pairs;
         
         pairs.forEach(pair => {
+            // Check for explosive collision
+            const explosiveBody = pair.bodyA.label === 'explosive' ? pair.bodyA : 
+                                  (pair.bodyB.label === 'explosive' ? pair.bodyB : null);
+            
+            if (explosiveBody && isRunning && !explosiveBody.hasDetonated) {
+                // Get the other body in the collision
+                const otherBody = pair.bodyA === explosiveBody ? pair.bodyB : pair.bodyA;
+                
+                // Calculate relative velocity between the two bodies
+                const relativeVelocity = Math.sqrt(
+                    Math.pow(explosiveBody.velocity.x - otherBody.velocity.x, 2) +
+                    Math.pow(explosiveBody.velocity.y - otherBody.velocity.y, 2)
+                );
+                
+                // Detonate on significant impact based on relative velocity
+                if (relativeVelocity > 1) {
+                    // Mark as detonated immediately to prevent multiple detonations
+                    explosiveBody.hasDetonated = true;
+                    
+                    // Apply explosion force to nearby objects (excluding the explosive itself)
+                    applyExplosionForce(explosiveBody.position.x, explosiveBody.position.y, 150, 0.08, explosiveBody);
+                    
+                    // Change color to indicate explosion (visual feedback)
+                    explosiveBody.render.fillStyle = '#FFA500';  // Orange explosion color
+                    
+                    // Remove explosive immediately
+                    Composite.remove(world, explosiveBody);
+                    placedObjects = placedObjects.filter(obj => obj !== explosiveBody);
+                    updateObjectCounter();
+                    
+                    updateStatus('💥 EXPLOSION!');
+                }
+            }
+            
+            // Check for NPC doom
             if ((pair.bodyA.label === 'npc' || pair.bodyB.label === 'npc') && !npcDoomed) {
                 // Check if collision is significant based on the other body's velocity
                 const otherBody = pair.bodyA.label === 'npc' ? pair.bodyB : pair.bodyA;
@@ -477,6 +544,8 @@ function revertAction(action) {
             removeSeesaw(action.seesawId);
         } else {
             // Remove single object
+            // Note: If object was removed during runtime (e.g., explosive detonation),
+            // this check will fail gracefully and skip removal
             const body = action.body;
             if (body && placedObjects.includes(body)) {
                 Composite.remove(world, body);
@@ -583,6 +652,21 @@ function recreateBody(type, x, y, angle) {
                 render: { fillStyle: '#F38181' }
             });
             break;
+        case 'spring':
+            body = Bodies.circle(x, y, 15, {
+                restitution: 1.5,
+                density: 0.02,
+                render: { fillStyle: '#9B59B6' }
+            });
+            break;
+        case 'explosive':
+            body = Bodies.circle(x, y, 18, {
+                restitution: 0.3,
+                density: 0.06,
+                label: 'explosive',
+                render: { fillStyle: '#E74C3C' }
+            });
+            break;
     }
     
     if (body && angle) {
@@ -687,6 +771,27 @@ function placeObject(type, x, y) {
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
             updateObjectCounter();
             return;
+            
+        case 'spring':
+            body = Bodies.circle(x, y, 15, {
+                restitution: 1.5,  // Super bouncy - launches objects
+                density: 0.02,     // Light weight
+                render: {
+                    fillStyle: '#9B59B6'  // Purple color
+                }
+            });
+            break;
+            
+        case 'explosive':
+            body = Bodies.circle(x, y, 18, {
+                restitution: 0.3,
+                density: 0.06,
+                label: 'explosive',  // Label for explosion detection
+                render: {
+                    fillStyle: '#E74C3C'  // Red color
+                }
+            });
+            break;
     }
     
     if (body) {

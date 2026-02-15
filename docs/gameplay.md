@@ -52,6 +52,21 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 - **Best For**: Weight-based triggers, launching objects
 - **Tip**: Drop a heavy object on one side to catapult lighter objects on the other side
 
+### 🌀 Spring
+- **Type**: Dynamic object
+- **Physics**: Super bouncy, lightweight
+- **Best For**: Launching objects at high speed, creating unexpected trajectories
+- **Special Feature**: Restitution of 1.5 (higher than normal) creates explosive bounce effects
+- **Tip**: Place springs strategically to redirect falling objects with extreme velocity
+
+### 💣 Explosive
+- **Type**: Dynamic object (single-use)
+- **Physics**: Moderate weight, detonates on impact
+- **Best For**: Creating explosive force fields, launching multiple objects simultaneously
+- **Special Feature**: Detonates when hit by a fast-moving object (velocity > 1), applies radial force to all nearby objects within 150px
+- **Visual Feedback**: Changes from red to orange when exploding, then disappears
+- **Tip**: Place near the NPC or use to trigger chain reactions with multiple objects
+
 ## 🕹️ How to Play
 
 ### Getting Started
@@ -153,6 +168,9 @@ The game includes a complete save/load system that stores your contraptions in y
 - **Domino Triggers**: Use dominoes to trigger delayed reactions
 - **Ramp Combinations**: Stack multiple angled ramps to create complex trajectories
 - **Platform Staging**: Build multi-level contraptions with platforms at different heights
+- **Spring Combos**: Bounce objects through multiple springs for extreme velocity
+- **Explosive Chains**: Place explosives near each other to create cascading explosions
+- **Spring-Explosive Combo**: Launch an object with a spring to detonate an explosive with high velocity
 
 ### Creative Challenges
 - 🏆 **Minimalist**: Doom the NPC with the fewest objects possible
@@ -243,7 +261,7 @@ Have an amazing contraption you'd like to share? Consider:
 
 Keep an eye on the repository for potential future features:
 - Level system with increasing difficulty
-- More object types (springs, explosives, fans)
+- More object types (fans, magnets, portals)
 - Save/load contraption designs
 - Leaderboards and scoring system
 - Multiplayer contraption challenges
