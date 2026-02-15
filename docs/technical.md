@@ -303,7 +303,7 @@ body.originalPosition = { x: body.position.x, y: body.position.y };
 body.originalAngle = body.angle;
 ```
 
-### 7. Sound System
+### 8. Sound System
 
 **Audio Architecture**:
 The game uses the Web Audio API to generate simple sound effects programmatically without requiring audio files. This provides a lightweight solution with zero external dependencies.

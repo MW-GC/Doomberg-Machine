@@ -119,7 +119,27 @@ let historyIndex = -1;
 
 // Sound system
 let soundEnabled = true;
-const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext = null;
+let lastCollisionSoundTime = 0; // Track last collision sound to prevent spam
+const COLLISION_SOUND_COOLDOWN = 100; // Minimum ms between collision sounds
+
+// Initialize audio context with feature detection
+try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+        audioContext = new AudioContextClass();
+    } else {
+        // Web Audio API not supported; disable sound but keep the game running
+        console.warn('Web Audio API not supported in this browser. Sound effects disabled.');
+        soundEnabled = false;
+    }
+} catch (e) {
+    // Audio context creation failed (blocked/disabled); disable sound safely
+    console.warn('Audio context creation failed. Sound effects disabled.', e);
+    soundEnabled = false;
+    audioContext = null;
+}
+
 // Scoring system
 let gameStartTime = 0;
 let doomTime = 0;
@@ -165,7 +185,12 @@ function applyExplosionForce(explosionX, explosionY, explosionRadius = 150, expl
  * @param {string} type - Type of sound: 'place', 'collision', 'doom', 'ui'
  */
 function playSound(type) {
-    if (!soundEnabled) return;
+    if (!soundEnabled || !audioContext) return;
+    
+    // Resume audio context if suspended (for autoplay policies)
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
     
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -215,6 +240,13 @@ function playSound(type) {
             oscillator.start(audioContext.currentTime);
             oscillator.stop(audioContext.currentTime + 0.08);
             break;
+            
+        default:
+            // Unknown sound type - clean up and return
+            oscillator.disconnect();
+            gainNode.disconnect();
+            console.warn(`Unknown sound type: ${type}`);
+            return;
     }
 }
 
@@ -228,12 +260,20 @@ function toggleSound() {
 }
 
 /**
- * Update sound button text
+ * Update sound button text and state
  */
 function updateSoundButton() {
     const soundBtn = document.getElementById('soundBtn');
     if (soundBtn) {
-        soundBtn.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+        if (!audioContext) {
+            // Audio not available - disable button and show unavailable state
+            soundBtn.textContent = '🔇 Sound: N/A';
+            soundBtn.disabled = true;
+            soundBtn.title = 'Web Audio API not supported in this browser';
+        } else {
+            soundBtn.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+            soundBtn.disabled = false;
+        }
     }
 }
 
@@ -241,6 +281,13 @@ function updateSoundButton() {
  * Load sound preference from localStorage
  */
 function loadSoundPreference() {
+    // Only load preference if audio is available
+    if (!audioContext) {
+        soundEnabled = false;
+        updateSoundButton();
+        return;
+    }
+    
     const saved = localStorage.getItem('doomberg_sound_enabled');
     if (saved !== null) {
         soundEnabled = saved === 'true';
@@ -364,6 +411,33 @@ function init() {
                     playSound('collision'); // Play collision sound
                     doomTime = (Date.now() - gameStartTime) / 1000; // Time in seconds
                     doomNPC();
+                }
+            }
+            
+            // Play general collision sounds for significant impacts during gameplay
+            // (rate-limited to avoid audio spam)
+            if (isRunning) {
+                const now = Date.now();
+                if (now - lastCollisionSoundTime > COLLISION_SOUND_COOLDOWN) {
+                    // Calculate impact velocity between the two bodies
+                    const bodyA = pair.bodyA;
+                    const bodyB = pair.bodyB;
+                    
+                    // Skip if both bodies are static (no collision sound needed)
+                    if (bodyA.isStatic && bodyB.isStatic) return;
+                    
+                    // Calculate relative velocity magnitude
+                    const relativeVelocity = Math.sqrt(
+                        Math.pow(bodyA.velocity.x - bodyB.velocity.x, 2) +
+                        Math.pow(bodyA.velocity.y - bodyB.velocity.y, 2)
+                    );
+                    
+                    // Play collision sound for impacts above a minimum threshold
+                    const COLLISION_SOUND_THRESHOLD = 1.5;
+                    if (relativeVelocity > COLLISION_SOUND_THRESHOLD) {
+                        playSound('collision');
+                        lastCollisionSoundTime = now;
+                    }
                 }
             }
         });
