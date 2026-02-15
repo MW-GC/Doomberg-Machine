@@ -27,6 +27,11 @@ const POSITION_ITERATIONS = 10; // Increased from default 6 to reduce tunneling
 const VELOCITY_ITERATIONS = 6;  // Increased from default 4 to reduce tunneling
 const DOOM_VELOCITY_THRESHOLD = 2; // Minimum velocity to doom NPC
 const MAX_OBJECTS = 100; // Maximum number of objects allowed for performance
+const MAX_SAVE_NAME_LENGTH = 30; // Maximum characters for save design names
+
+// Object type detection thresholds (used in getObjectType for serialization)
+const PLATFORM_MIN_WIDTH = 140; // Platforms are wider than ramps (150 vs 120)
+const DOMINO_MIN_HEIGHT = 50; // Dominoes are taller than boxes (60 vs 40)
 
 /**
  * Normalize an angle in radians to the range [0, 2π).
@@ -1023,13 +1028,14 @@ function getObjectType(body) {
     // Check for static objects
     if (body.isStatic) {
         const width = body.bounds.max.x - body.bounds.min.x;
-        // Platform is wider than ramp
-        return width > 140 ? 'platform' : 'ramp';
+        // Platform is wider than ramp (150 vs 120)
+        return width > PLATFORM_MIN_WIDTH ? 'platform' : 'ramp';
     }
     
     // Check dynamic objects by height
     const height = body.bounds.max.y - body.bounds.min.y;
-    return height > 50 ? 'domino' : 'box';
+    // Domino is taller than box (60 vs 40)
+    return height > DOMINO_MIN_HEIGHT ? 'domino' : 'box';
 }
 
 /**
@@ -1044,6 +1050,13 @@ function saveContraption(name) {
     }
     
     name = name.trim();
+    
+    // Enforce max length constraint (same as HTML input maxlength="30")
+    if (name.length > MAX_SAVE_NAME_LENGTH) {
+        updateStatus(`Design name too long (max ${MAX_SAVE_NAME_LENGTH} characters)`);
+        alert(`Design name must be ${MAX_SAVE_NAME_LENGTH} characters or less!`);
+        return;
+    }
     
     // Collect all unique objects (avoid duplicating seesaw parts)
     const processedSeesaws = new Set();
@@ -1115,7 +1128,9 @@ function loadContraption(name) {
         
         const design = JSON.parse(data);
         
-        // Verify version
+        // Verify version - using strict equality for conservative compatibility
+        // Only version 1 is currently supported. Future versions should implement
+        // backward compatibility logic here if needed (e.g., design.version <= MAX_SUPPORTED_VERSION)
         if (design.version !== 1) {
             updateStatus('Incompatible design version');
             alert('This design was saved with an incompatible version.');
@@ -1125,21 +1140,61 @@ function loadContraption(name) {
         // Clear existing objects
         clearAll();
         
+        // Track maximum seesawId to prevent ID collisions
+        let maxSeesawId = -1;
+        
         // Recreate objects
         design.objects.forEach(objData => {
-            placeObject(objData.type, objData.x, objData.y);
-            
-            // For ramps, restore the angle
-            if (objData.type === 'ramp' && objData.angle !== undefined) {
-                const lastObject = placedObjects[placedObjects.length - 1];
-                if (lastObject && !lastObject.label) {
-                    Body.setAngle(lastObject, objData.angle);
-                    lastObject.originalAngle = objData.angle;
+            if (objData.type === 'seesaw') {
+                // For seesaws, use the saved seesawId to maintain consistency
+                const seesawId = objData.seesawId !== undefined ? objData.seesawId : seesawIdCounter++;
+                createSeesaw(objData.x, objData.y, seesawId);
+                
+                // Track max ID
+                if (seesawId > maxSeesawId) {
+                    maxSeesawId = seesawId;
+                }
+                
+                // Record action for undo/redo
+                const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
+                const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
+                const constraint = placedConstraints.find(c => c.seesawId === seesawId);
+                
+                if (pivot && plank && constraint) {
+                    recordAction({
+                        type: 'place',
+                        objectType: 'seesaw',
+                        x: objData.x,
+                        y: objData.y,
+                        angle: 0,
+                        seesawId: seesawId,
+                        pivot: pivot,
+                        plank: plank,
+                        constraint: constraint
+                    });
+                }
+            } else {
+                // Regular objects
+                placeObject(objData.type, objData.x, objData.y);
+                
+                // For ramps, restore the angle
+                if (objData.type === 'ramp' && objData.angle !== undefined) {
+                    const lastObject = placedObjects[placedObjects.length - 1];
+                    if (lastObject && !lastObject.label) {
+                        Body.setAngle(lastObject, objData.angle);
+                        lastObject.originalAngle = objData.angle;
+                    }
                 }
             }
         });
         
+        // Update seesawIdCounter to prevent ID collisions with newly created seesaws
+        if (maxSeesawId >= 0) {
+            seesawIdCounter = Math.max(seesawIdCounter, maxSeesawId + 1);
+        }
+        
         updateStatus(`Loaded: ${name} (${design.objects.length} objects)`);
+        updateObjectCounter();
     } catch (e) {
         updateStatus('Failed to load design');
         alert('Failed to load design: The data may be corrupted.');
@@ -1175,14 +1230,36 @@ function deleteContraption(name) {
         return;
     }
     
+    const storageKey = `doomberg_${name}`;
+    
     try {
-        localStorage.removeItem(`doomberg_${name}`);
+        // Check if localStorage is available and whether the item exists
+        const existingValue = localStorage.getItem(storageKey);
+        
+        if (existingValue === null) {
+            updateStatus(`Design not found: ${name}`);
+            refreshSavedList();
+            document.getElementById('savedList').value = '';
+            return;
+        }
+        
+        // Remove the item
+        localStorage.removeItem(storageKey);
+        
+        // Verify removal succeeded
+        const stillExists = localStorage.getItem(storageKey) !== null;
+        if (stillExists) {
+            updateStatus('Failed to delete design');
+            console.error('Delete error: item still present after removeItem');
+            return;
+        }
+        
         updateStatus(`Deleted: ${name}`);
         refreshSavedList();
         document.getElementById('savedList').value = '';
     } catch (e) {
-        updateStatus('Failed to delete design');
-        console.error('Delete error:', e);
+        updateStatus('Saving is not available in this browser');
+        console.error('localStorage access error:', e);
     }
 }
 

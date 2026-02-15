@@ -359,7 +359,8 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
 **Complex Object Handling**:
 - Seesaws saved once using pivot position
 - Constraint properties not stored (recreated on load)
-- SeesawId used to avoid duplication during serialization
+- `seesawId` is saved in the JSON data and used to avoid duplication during serialization
+- `seesawId` values are restored when loading and `seesawIdCounter` is synchronized to prevent ID collisions
 
 **Error Handling**:
 - Try-catch blocks around localStorage operations
