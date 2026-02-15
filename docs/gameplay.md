@@ -261,6 +261,7 @@ The game includes a complete save/load system that stores your contraptions in y
 | Clear All | Click "🗑️ Clear All" |
 | Undo | `Ctrl+Z` or Click "↶ Undo" |
 | Redo | `Ctrl+Y` or `Ctrl+Shift+Z` or Click "↷ Redo" |
+| Toggle Sound | Click "🔊 Sound" button |
 | Save Design | Type name and click "💾 Save" or press `Enter` |
 | Load Design | Select from dropdown and click "📂 Load" |
 | Delete Saved Design | Select from dropdown and click "🗑️ Delete" |
@@ -296,6 +297,9 @@ A: The new save will overwrite the old one. Use unique names or add version numb
 
 **Q: How do I use pause and slow-motion?**  
 A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.
+
+**Q: Can I turn off the sound effects?**  
+A: Yes! Click the "🔊 Sound: ON" button in the Actions panel to toggle sound effects on or off. Your preference is saved automatically and will be remembered next time you play.
 
 **Q: What does the Grid toggle do?**  
 A: The Grid button enables/disables a 40px grid overlay on the canvas. When enabled (Grid: ON), objects automatically snap to the nearest grid intersection for perfectly aligned placement. Turn it off (Grid: OFF) for free placement at any position. Great for creating precise, professional-looking contraptions!
