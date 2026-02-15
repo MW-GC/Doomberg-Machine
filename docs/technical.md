@@ -250,6 +250,45 @@ body.originalPosition = { x: body.position.x, y: body.position.y };
 body.originalAngle = body.angle;
 ```
 
+### 7. Sound System
+
+**Audio Architecture**:
+The game uses the Web Audio API to generate simple sound effects programmatically without requiring audio files. This provides a lightweight solution with zero external dependencies.
+
+**Sound Types**:
+- **place**: Object placement sound (400Hz sine wave, 0.1s duration)
+- **collision**: Collision impact sound (100Hz square wave, 0.15s duration)  
+- **doom**: NPC doom sound (600Hz → 100Hz descending sawtooth, 0.5s duration)
+- **ui**: UI interaction sound (800Hz sine wave, 0.08s duration)
+
+**Implementation**:
+```javascript
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+    if (!soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    // Configure based on sound type
+    // Create tones using oscillators with frequency/gain envelopes
+}
+```
+
+**Sound Events**:
+- Object placement → `playSound('place')`
+- NPC collision → `playSound('collision')`  
+- NPC doom → `playSound('doom')`
+- UI actions (run, reset, clear, undo, redo) → `playSound('ui')`
+- Sound toggle → `playSound('ui')`
+
+**User Preferences**:
+- Sound state stored in localStorage as `doomberg_sound_enabled`
+- Persists between sessions
+- Loaded during initialization via `loadSoundPreference()`
+- Toggle button updates with mute icon (🔇) when disabled
+
 ## ⚙️ Physics Engine
 
 ### Matter.js Integration

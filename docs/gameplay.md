@@ -132,6 +132,9 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 | Slow Motion Toggle | Click "🐌 Slow-Mo" |
 | Reset Positions | Click "🔄 Reset" |
 | Clear All | Click "🗑️ Clear All" |
+| Undo | Click "↶ Undo" or `Ctrl+Z` |
+| Redo | Click "↷ Redo" or `Ctrl+Y` |
+| Toggle Sound | Click "🔊 Sound" button |
 
 ## ❓ Frequently Asked Questions
 
@@ -152,6 +155,9 @@ A: No - the game has invisible walls on the left and right sides to keep everyth
 
 **Q: How do I use pause and slow-motion?**  
 A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.
+
+**Q: Can I turn off the sound effects?**  
+A: Yes! Click the "🔊 Sound: ON" button in the Actions panel to toggle sound effects on or off. Your preference is saved automatically and will be remembered next time you play.
 
 **Q: Does the NPC fight back?**  
 A: Nope! The NPC is purely a target and doesn't move or defend itself (until you hit it).
