@@ -381,68 +381,78 @@ const levels = [
 
 ---
 
-#### 8. Save/Load System
+#### 8. Save/Load System ✅ **IMPLEMENTED**
 **Priority**: Medium  
 **Effort**: Medium  
-**Value**: High
+**Value**: High  
+**Status**: ✅ Completed (February 2026)
 
 **Description**: Save contraption designs and load them later
 
-**Implementation Options**:
+**Implementation Delivered**:
 
-**Option A: LocalStorage**
+**LocalStorage Implementation** ✅
 ```javascript
 function saveContraption(name) {
     const design = {
         version: 1,
+        timestamp: Date.now(),
         name: name,
         objects: placedObjects.map(obj => ({
-            type: obj.label,
-            position: obj.position,
-            angle: obj.angle,
-            // ... other properties
+            type: getObjectType(obj),
+            x: obj.position.x,
+            y: obj.position.y,
+            angle: obj.angle
         }))
     };
-    localStorage.setItem(`contraption_${name}`, JSON.stringify(design));
+    localStorage.setItem(`doomberg_${name}`, JSON.stringify(design));
 }
 
 function loadContraption(name) {
-    const data = localStorage.getItem(`contraption_${name}`);
+    const data = localStorage.getItem(`doomberg_${name}`);
     if (data) {
         const design = JSON.parse(data);
-        recreateObjects(design.objects);
+        clearAll();
+        design.objects.forEach(objData => {
+            placeObject(objData.type, objData.x, objData.y);
+            // Restore angles for ramps
+        });
     }
 }
 ```
 
-**Option B: URL Encoding**
-```javascript
-function exportToURL() {
-    const data = compressDesign(placedObjects);
-    const encoded = btoa(JSON.stringify(data));
-    const url = `${window.location.origin}${window.location.pathname}?design=${encoded}`;
-    navigator.clipboard.writeText(url);
-}
-```
+**Features Delivered**:
+- ✅ Save designs with custom names (up to 30 characters)
+- ✅ Load previously saved designs
+- ✅ List all saved designs in dropdown menu
+- ✅ Delete saved designs with confirmation
+- ✅ Handles complex objects (seesaws with constraints)
+- ✅ Saves and restores ramp rotation angles
+- ✅ Enter key shortcut for quick saving
+- ✅ Error handling for storage quota and corrupted data
+- ✅ Status messages for all operations
+- ✅ Complete documentation in gameplay.md and technical.md
 
-**Option C: File Export**
-```javascript
-function exportToFile() {
-    const data = JSON.stringify(designData, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'contraption.json';
-    a.click();
-}
-```
+**UI Changes**:
+- ✅ Added "Save/Load" control group
+- ✅ Text input for design name
+- ✅ Save, Load, and Delete buttons
+- ✅ Dropdown showing all saved designs
+- ✅ Consistent styling with existing UI
 
-**Benefits**:
-- Share designs with others
-- Build complex machines over multiple sessions
-- Backup favorite contraptions
-- Community sharing potential
+**Benefits Achieved**:
+- ✅ Share design names with others
+- ✅ Build complex machines over multiple sessions
+- ✅ Backup favorite contraptions
+- ✅ Community sharing potential (by name)
+- ✅ Persistent storage across browser sessions
+- ✅ Easy iteration and experimentation
+
+**Future Enhancements** (Not in this PR):
+- URL Encoding: Share designs via links (Option B)
+- File Export/Import: Download/upload JSON files (Option C)
+- Cloud sync: Store designs on server
+- Design thumbnails: Visual preview in dropdown
 
 ---
 
@@ -491,14 +501,17 @@ function playback() {
 
 ---
 
-#### 10. Scoring System
+#### 10. Scoring System ✅ **IMPLEMENTED**
 **Priority**: Medium  
 **Effort**: Medium  
-**Value**: Medium
+**Value**: Medium  
+**Status**: ✅ Completed (February 2026)
 
 **Description**: Score contraptions based on various metrics
 
-**Scoring Factors**:
+**Implementation**:
+
+**Scoring Metrics Implemented**:
 ```javascript
 function calculateScore() {
     let score = 0;
@@ -507,33 +520,53 @@ function calculateScore() {
     if (npcDoomed) score += 1000;
     
     // Efficiency bonus (fewer objects = higher score)
-    const objectBonus = Math.max(0, 500 - (placedObjects.length * 20));
+    const objectBonus = Math.max(0, 500 - ((placedObjects.length - 1) * 20));
     score += objectBonus;
     
     // Speed bonus (faster doom = higher score)
-    const timeBonus = Math.max(0, 500 - (doomTime * 10));
-    score += timeBonus;
+    const speedBonus = Math.max(0, 500 - (doomTime * 50));
+    score += speedBonus;
     
-    // Creativity bonus (variety of objects used)
-    const uniqueTypes = new Set(placedObjects.map(o => o.label)).size;
+    // Variety bonus (different object types used)
+    const uniqueTypes = objectTypesUsed.size;
     score += uniqueTypes * 100;
     
     // Combo multiplier (chain reactions)
-    score *= comboMultiplier;
+    let comboMultiplier = 1.0;
+    if (collisionCount >= 5) {
+        comboMultiplier = 1.1 + Math.min((collisionCount - 5) * 0.05, 0.5);
+    }
+    score = Math.round(score * comboMultiplier);
     
     return score;
 }
 ```
 
-**Display**:
-- Show score after doom
-- Leaderboard (local or online)
-- Star rating (1-3 stars based on score)
+**Star Rating System**:
+- ⭐ 1 Star: 0-1,999 points
+- ⭐⭐ 2 Stars: 2,000-2,799 points
+- ⭐⭐⭐ 3 Stars: 2,800+ points
+
+**Display Implementation**:
+- Animated score modal appears 1 second after doom
+- Shows star rating with emoji (⭐⭐⭐)
+- Large, prominent total score display
+- Detailed breakdown table with color-coded values
+- "Continue Building" button to dismiss
+
+**Features Delivered**:
+- ✅ Tracks object count, completion time, object variety
+- ✅ Calculates score based on efficiency, speed, variety, and success
+- ✅ Implements combo multipliers for chain reactions
+- ✅ Beautiful animated modal with score breakdown
+- ✅ Star rating system (1-3 stars)
+- ✅ Comprehensive documentation in gameplay.md and technical.md
 
 **Benefits**:
-- Adds challenge and replayability
-- Encourages optimization
-- Competition and community engagement
+- ✅ Adds challenge and replayability
+- ✅ Encourages optimization and experimentation
+- ✅ Provides clear performance feedback
+- ✅ Foundation for future leaderboards and challenges
 
 ---
 
@@ -920,22 +953,24 @@ if (placedObjects.length >= MAX_OBJECTS) {
 
 ### Phase 1: Quick Wins (1-2 weeks)
 1. ✅ Object deletion (right-click) - **COMPLETED**
-2. Object counter display
-3. Pause/play button
+2. ✅ Object counter display - **COMPLETED**
+3. ✅ Pause/play button - **COMPLETED**
 4. ✅ Undo/redo system - **COMPLETED**
-5. Bug fixes (tunneling, reset issues)
+5. ✅ Slow-motion control - **COMPLETED**
+6. ✅ Bug fixes (tunneling, reset issues) - **COMPLETED**
 
 **Impact**: High usability improvements with minimal effort  
-**Status**: 2/5 completed (40%)
+**Status**: ✅ 6/6 completed (100%)
 
 ### Phase 2: Core Features (3-4 weeks)
-1. Save/load system (localStorage)
+1. ✅ Save/load system (localStorage) - **COMPLETED**
 2. More object types (spring, explosive)
-3. Scoring system
+3. ✅ Scoring system - **COMPLETED**
 4. Grid/snap toggle
 5. Sound effects
 
-**Impact**: Major feature additions that enhance gameplay
+**Impact**: Major feature additions that enhance gameplay  
+**Status**: 1/5 completed (20%)
 
 ### Phase 3: Content & Polish (4-6 weeks)
 1. Level system (10-15 levels)
@@ -962,21 +997,25 @@ if (placedObjects.length >= MAX_OBJECTS) {
 ```
 High Value, Low Effort:
 - ✅ Object deletion (COMPLETED Feb 2026)
-- Object counter
-- Pause button
+- ✅ Object counter (COMPLETED Feb 2026)
+- ✅ Pause button (COMPLETED Feb 2026)
 - ✅ Undo/redo system (COMPLETED Feb 2026)
-- Bug fixes
+- ✅ Bug fixes (COMPLETED Feb 2026)
 
 High Value, High Effort:
-- Save/load system
+- ✅ Save/load system (COMPLETED Feb 2026)
 - Level system
 - Mobile support
 - More object types
 
+Medium Value, Medium Effort:
+- ✅ Scoring system (COMPLETED Feb 2026)
+- Grid toggle
+- Sound effects
+
 Low Value, Low Effort:
 - Theme system
 - Analytics
-- Grid toggle
 
 Low Value, High Effort:
 - (Avoid these)

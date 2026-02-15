@@ -168,6 +168,8 @@ function placeObject(type, x, y) {
 - `ramp`: Static angled platform (rotatable)
 - `platform`: Static horizontal ledge
 - `seesaw`: Compound body with pivot constraint
+- `spring`: Circle body with extreme restitution (1.5) for launching objects
+- `explosive`: Circle body with detonation capability on impact, applies radial force to nearby objects
 
 ### 3. State Management
 
@@ -181,10 +183,18 @@ function placeObject(type, x, y) {
 let isRunning = false;      // Physics simulation status
 let isPaused = false;       // Pause state (timeScale = 0)
 let isSlowMotion = false;   // Slow-motion state (timeScale = 0.25)
+let isGridEnabled = false;  // Grid overlay and snap-to-grid state
 let npcDoomed = false;      // Victory condition flag
 let selectedTool = null;    // Currently selected object type
 let placedObjects = [];     // Array of placed body references
 let placedConstraints = []; // Array of constraint references
+
+// Scoring system state
+let gameStartTime = 0;      // Timestamp when machine starts running
+let doomTime = 0;           // Time in seconds from start to doom
+let collisionCount = 0;     // Total collisions during simulation
+let currentScore = 0;       // Most recent calculated score
+let currentStars = 0;       // Most recent star rating (1-3)
 ```
 
 ### 4. Collision Detection System
@@ -233,7 +243,50 @@ function applyTimeScale() {
 - Can queue slow-motion while paused (applies on resume)
 - Context-aware status messages
 
-### 6. Reset System
+### 6. Scoring System
+
+**Score Calculation**:
+The scoring system evaluates player performance across four metrics, with a combo multiplier applied to the total.
+
+**Metrics**:
+1. **Success Bonus** (1000 points): Base reward for dooming the NPC
+2. **Efficiency Bonus** (0-500 points): Rewards using fewer objects
+   - Formula: `max(0, 500 - ((objectCount - 1) × 20))`
+   - 1 object = 500 points
+   - Each additional object reduces bonus by 20 points
+3. **Speed Bonus** (0-500 points): Rewards faster completion
+   - Formula: `max(0, 500 - (doomTime × 50))`
+   - At 0 seconds = 500 points
+   - Every 1 second increase in `doomTime` reduces the bonus by 50 points (e.g., 0.8s → 460, 1s → 450, 2s → 400)
+4. **Variety Bonus** (0-600 points): Rewards using different object types
+   - Derived from current placed objects at doom time
+   - Each unique type = 100 points
+   - Maximum 600 points (all 6 types)
+5. **Combo Multiplier** (1.0x-1.6x): Rewards chain reactions
+   - Activated at 5+ collisions
+   - Formula: `1.1 + min((collisionCount - 5) × 0.05, 0.5)`
+   - Maximum 1.6x multiplier
+
+**Star Rating Calculation**:
+```javascript
+let stars = 1;
+if (score >= 2000) stars = 2;
+if (score >= 2800) stars = 3;
+```
+
+**Tracking**:
+- `gameStartTime`: Set when `runMachine()` is called
+- `doomTime`: Calculated as `(Date.now() - gameStartTime) / 1000` when NPC is doomed
+- `collisionCount`: Incremented on every collision during gameplay
+- Variety: Derived from `placedObjects` array at scoring time by examining object properties
+
+**Display**:
+- Modal appears 1 second after doom
+- Shows star rating, total score, and detailed breakdown
+- Animated entrance with CSS transitions
+- "Continue Building" button to dismiss
+
+### 7. Reset System
 
 **Reset Functionality**:
 - Stops the physics runner
@@ -306,13 +359,16 @@ render = Render.create({
     canvas: canvas,
     engine: engine,
     options: {
-        width: 1200,
-        height: 600,
+        width: 1200,        // CANVAS_WIDTH
+        height: 600,        // CANVAS_HEIGHT
         wireframes: false,
         background: '#87CEEB'  // Matter.js handles background fill
     }
 });
 ```
+
+**Grid Constants**:
+- **`GRID_SIZE`**: 40 pixels - Grid cell size for overlay and snap-to-grid
 
 **Important**: The canvas element should NOT have a CSS background as it will render over the canvas drawing context. Matter.js's `background` option fills the canvas properly before rendering physics bodies.
 
@@ -343,6 +399,75 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
   const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;  // 535
   ```
 - This ensures NPC feet are placed at ground level (y=580) when created, preventing the NPC from falling through the ground when made dynamic
+
+### 9. Save/Load System
+
+**Architecture**:
+- Uses browser localStorage for persistent storage
+- Serializes contraption state to JSON
+- Supports multiple saved designs per browser
+- Each save includes object types, positions, angles, and IDs
+
+**Save Data Structure**:
+```javascript
+{
+    version: 1,                    // Format version for future compatibility
+    timestamp: 1708034567890,      // Unix timestamp (ms)
+    name: "My Awesome Machine",    // User-provided name
+    objects: [
+        {
+            type: "ball",
+            x: 259.5,
+            y: 190.2,
+            angle: 0
+        },
+        {
+            type: "ramp",
+            x: 358.0,
+            y: 289.5,
+            angle: -0.297  // Radians
+        },
+        {
+            type: "seesaw",
+            x: 557.0,
+            y: 388.0,
+            angle: 0,
+            seesawId: 0    // For complex objects
+        }
+        // ... more objects
+    ]
+}
+```
+
+**Storage Keys**:
+- Pattern: `doomberg_{designName}`
+- Example: `doomberg_Test Machine 1`
+- Easy filtering and management
+
+**Features**:
+- **Save**: Captures all placed objects with exact positions and angles
+- **Load**: Clears workspace and recreates objects from saved data
+- **List**: Populates dropdown with all saved designs
+- **Delete**: Removes saved design with confirmation
+- **Validation**: Checks version compatibility before loading
+
+**Complex Object Handling**:
+- Seesaws saved once using pivot position
+- Constraint properties not stored (recreated on load)
+- `seesawId` is saved in the JSON data and used to avoid duplication during serialization
+- `seesawId` values are restored when loading and `seesawIdCounter` is synchronized to prevent ID collisions
+
+**Error Handling**:
+- Try-catch blocks around localStorage operations
+- Storage quota exceeded alerts
+- Corrupted data fallback
+- Missing design notifications
+
+**Limitations**:
+- Browser-specific (localStorage per origin)
+- Storage quota: ~5-10MB typical
+- No cross-browser sync
+- Cleared with browser data
 
 ### Constraints
 
@@ -415,6 +540,18 @@ Deletes object at specified position using Matter.js Query.
 - **Side Effects**: Removes body from world, records deletion action for undo
 - **Special Handling**: Properly removes seesaws (both bodies and constraints)
 
+#### `applyExplosionForce(explosionX, explosionY, explosionRadius, explosionForce)`
+Applies radial force to all nearby objects from an explosion center.
+- **Parameters**:
+  - `explosionX` (number): X coordinate of explosion center
+  - `explosionY` (number): Y coordinate of explosion center
+  - `explosionRadius` (number, optional): Radius of explosion effect (default: 150)
+  - `explosionForce` (number, optional): Force magnitude (default: 0.08)
+- **Returns**: void
+- **Side Effects**: Applies impulse force to all dynamic bodies within radius
+- **Algorithm**: Force decreases linearly with distance from center (inverse distance scaling)
+- **Usage**: Called automatically when explosive objects detonate on collision
+
 #### `undo()`
 Reverts the most recent action in history.
 - **Preconditions**: `!isRunning && historyIndex >= 0`
@@ -475,7 +612,38 @@ Removes a body from the world, handling compound objects (seesaws).
 Triggers the victory condition when NPC is hit.
 - **Preconditions**: `!npcDoomed`
 - **Returns**: void
-- **Side Effects**: Updates UI, changes NPC color, applies force
+- **Side Effects**: Updates UI, changes NPC color, applies force, schedules score calculation
+
+#### `calculateAndDisplayScore()`
+Calculates and displays the final score based on performance metrics.
+- **Preconditions**: `npcDoomed === true`
+- **Returns**: void
+- **Side Effects**: Sets `currentScore` and `currentStars`, displays score modal
+- **Scoring Factors**:
+  - Base doom score: 1000 points
+  - Efficiency bonus: `max(0, 500 - ((objectCount - 1) × 20))`
+  - Speed bonus: `max(0, 500 - (doomTime × 50))`
+  - Variety bonus: `uniqueTypes × 100`
+  - Combo multiplier: `1.1 + min((collisionCount - 5) × 0.05, 0.5)` (if collisions > 5)
+- **Star Ratings**:
+  - 1 star: 0-1999 points
+  - 2 stars: 2000-2799 points
+  - 3 stars: 2800+ points
+
+#### `showScoreModal(score, stars, breakdown)`
+Displays the score modal with detailed breakdown.
+- **Parameters**:
+  - `score` (number): Final calculated score
+  - `stars` (number): Star rating (1-3)
+  - `breakdown` (array): Array of scoring breakdown objects
+- **Returns**: void
+- **Side Effects**: Creates/updates modal DOM, displays with animation
+- **Modal Features**:
+  - Animated entrance
+  - Star rating display with emoji
+  - Total score in large, prominent display
+  - Detailed breakdown table
+  - "Continue Building" button to close
 
 #### `togglePause()`
 Toggles simulation pause state.
@@ -500,12 +668,78 @@ Applies appropriate timeScale based on current state.
   - Slow-motion (not paused): `0.25`
   - Normal (not paused): `1.0`
 
+#### `toggleGrid()`
+Toggles the grid overlay and snap-to-grid functionality.
+- **Returns**: void
+- **Side Effects**: 
+  - Updates `isGridEnabled` state
+  - Adds/removes 'active' class from grid button
+  - Updates button text (⊞ Grid: ON/OFF)
+  - Updates status message
+- **Behavior**: When enabled, shows 40px grid overlay and snaps object placement to grid intersections
+#### `saveContraption(name)`
+Saves current contraption design to localStorage.
+- **Parameters**: `name` (string): Name for the saved design (max 30 chars)
+- **Returns**: void
+- **Side Effects**: Serializes objects to JSON, stores in localStorage with key `doomberg_{name}`
+- **Format**: Stores object type, position, angle, and seesawId (for seesaws)
+- **Notes**: Handles complex objects (seesaws) by storing only once using pivot position
+
+#### `loadContraption(name)`
+Loads a contraption design from localStorage.
+- **Parameters**: `name` (string): Name of saved design to load
+- **Returns**: void
+- **Side Effects**: Clears current objects, recreates objects from saved data
+- **Error Handling**: Shows alert if design not found or data corrupted
+- **Notes**: Calls `placeObject()` for each saved object, restores angles for ramps
+
+#### `listSavedContraptions()`
+Gets list of all saved contraption names.
+- **Returns**: Array<string> - Sorted array of saved design names
+- **Notes**: Filters localStorage keys starting with `doomberg_`
+
+#### `deleteContraption(name)`
+Deletes a saved contraption from localStorage.
+- **Parameters**: `name` (string): Name of design to delete
+- **Returns**: void
+- **Side Effects**: Removes from localStorage, refreshes dropdown list
+- **Confirmation**: Shows browser confirm dialog before deletion
+
+#### `refreshSavedList()`
+Updates the saved designs dropdown menu.
+- **Returns**: void
+- **Side Effects**: Populates `<select id="savedList">` with saved design names
+- **Notes**: Called after save/load/delete operations and on init
+
+#### `getObjectType(body)`
+Helper function to determine object type from a Matter.js body.
+- **Parameters**: `body` (Body): Matter.js body
+- **Returns**: string - Object type identifier ('ball', 'box', 'domino', 'ramp', 'platform', 'seesaw')
+- **Logic**: Uses body properties (circleRadius, isStatic, dimensions) to identify type
+
 ### Utility Functions
 
 #### `normalizeAngle(angle)`
 Normalizes an angle to the range [0, 2π).
 - **Parameters**: `angle` (number): Angle in radians
 - **Returns**: number - Normalized angle
+
+#### `snapToGrid(x, y)`
+Snaps coordinates to the nearest grid intersection when grid is enabled.
+- **Parameters**: 
+  - `x` (number): X coordinate
+  - `y` (number): Y coordinate
+- **Returns**: object - `{x: number, y: number}` with snapped or original coordinates
+- **Behavior**: If `isGridEnabled` is false, returns original coordinates unchanged
+- **Grid Size**: Uses `GRID_SIZE` constant (40px)
+
+#### `drawGrid(context)`
+Draws the grid overlay on the canvas.
+- **Parameters**: `context` (CanvasRenderingContext2D): Canvas 2D context
+- **Returns**: void
+- **Behavior**: If `isGridEnabled` is false, does nothing
+- **Appearance**: Semi-transparent black lines (rgba(0, 0, 0, 0.1))
+- **Pattern**: Draws vertical and horizontal lines at `GRID_SIZE` intervals
 
 #### `rotateRamp(angleChange)`
 Updates the current ramp rotation angle.
@@ -524,6 +758,7 @@ Updates the status display text.
 ```javascript
 canvas.addEventListener('click', (event) => {
     // Convert screen coordinates to canvas coordinates
+    // Apply snap-to-grid if enabled
     // Call placeObject() with selected tool
 });
 ```
@@ -585,10 +820,21 @@ To add a new object type, follow this pattern:
 ```javascript
 case 'spring':
     body = Bodies.circle(x, y, 15, {
-        restitution: 1.2,  // Super bouncy!
+        restitution: 1.5,  // Super bouncy!
         density: 0.02,
         render: {
-            fillStyle: '#FF00FF'
+            fillStyle: '#9B59B6'  // Purple
+        }
+    });
+    break;
+
+case 'explosive':
+    body = Bodies.circle(x, y, 18, {
+        restitution: 0.3,
+        density: 0.06,
+        label: 'explosive',  // For collision detection
+        render: {
+            fillStyle: '#E74C3C'  // Red
         }
     });
     break;
