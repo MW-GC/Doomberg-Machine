@@ -420,17 +420,15 @@ function init() {
                 const now = Date.now();
                 if (now - lastCollisionSoundTime > COLLISION_SOUND_COOLDOWN) {
                     // Calculate impact velocity between the two bodies
-                    const bodyA = pair.bodyA;
-                    const bodyB = pair.bodyB;
+                    const { bodyA, bodyB } = pair;
                     
                     // Skip if both bodies are static (no collision sound needed)
                     if (bodyA.isStatic && bodyB.isStatic) return;
                     
                     // Calculate relative velocity magnitude
-                    const relativeVelocity = Math.sqrt(
-                        Math.pow(bodyA.velocity.x - bodyB.velocity.x, 2) +
-                        Math.pow(bodyA.velocity.y - bodyB.velocity.y, 2)
-                    );
+                    const dx = bodyA.velocity.x - bodyB.velocity.x;
+                    const dy = bodyA.velocity.y - bodyB.velocity.y;
+                    const relativeVelocity = Math.sqrt(dx * dx + dy * dy);
                     
                     // Play collision sound for impacts above a minimum threshold
                     const COLLISION_SOUND_THRESHOLD = 1.5;
