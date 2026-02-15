@@ -187,6 +187,13 @@ let npcDoomed = false;      // Victory condition flag
 let selectedTool = null;    // Currently selected object type
 let placedObjects = [];     // Array of placed body references
 let placedConstraints = []; // Array of constraint references
+
+// Scoring system state
+let gameStartTime = 0;      // Timestamp when machine starts running
+let doomTime = 0;           // Time in seconds from start to doom
+let collisionCount = 0;     // Total collisions during simulation
+let currentScore = 0;       // Most recent calculated score
+let currentStars = 0;       // Most recent star rating (1-3)
 ```
 
 ### 4. Collision Detection System
@@ -235,7 +242,50 @@ function applyTimeScale() {
 - Can queue slow-motion while paused (applies on resume)
 - Context-aware status messages
 
-### 6. Reset System
+### 6. Scoring System
+
+**Score Calculation**:
+The scoring system evaluates player performance across four metrics, with a combo multiplier applied to the total.
+
+**Metrics**:
+1. **Success Bonus** (1000 points): Base reward for dooming the NPC
+2. **Efficiency Bonus** (0-500 points): Rewards using fewer objects
+   - Formula: `max(0, 500 - ((objectCount - 1) × 20))`
+   - 1 object = 500 points
+   - Each additional object reduces bonus by 20 points
+3. **Speed Bonus** (0-500 points): Rewards faster completion
+   - Formula: `max(0, 500 - (doomTime × 50))`
+   - At 0 seconds = 500 points
+   - Every 1 second increase in `doomTime` reduces the bonus by 50 points (e.g., 0.8s → 460, 1s → 450, 2s → 400)
+4. **Variety Bonus** (0-600 points): Rewards using different object types
+   - Derived from current placed objects at doom time
+   - Each unique type = 100 points
+   - Maximum 600 points (all 6 types)
+5. **Combo Multiplier** (1.0x-1.6x): Rewards chain reactions
+   - Activated at 5+ collisions
+   - Formula: `1.1 + min((collisionCount - 5) × 0.05, 0.5)`
+   - Maximum 1.6x multiplier
+
+**Star Rating Calculation**:
+```javascript
+let stars = 1;
+if (score >= 2000) stars = 2;
+if (score >= 2800) stars = 3;
+```
+
+**Tracking**:
+- `gameStartTime`: Set when `runMachine()` is called
+- `doomTime`: Calculated as `(Date.now() - gameStartTime) / 1000` when NPC is doomed
+- `collisionCount`: Incremented on every collision during gameplay
+- Variety: Derived from `placedObjects` array at scoring time by examining object properties
+
+**Display**:
+- Modal appears 1 second after doom
+- Shows star rating, total score, and detailed breakdown
+- Animated entrance with CSS transitions
+- "Continue Building" button to dismiss
+
+### 7. Reset System
 
 **Reset Functionality**:
 - Stops the physics runner
@@ -519,7 +569,38 @@ Removes a body from the world, handling compound objects (seesaws).
 Triggers the victory condition when NPC is hit.
 - **Preconditions**: `!npcDoomed`
 - **Returns**: void
-- **Side Effects**: Updates UI, changes NPC color, applies force
+- **Side Effects**: Updates UI, changes NPC color, applies force, schedules score calculation
+
+#### `calculateAndDisplayScore()`
+Calculates and displays the final score based on performance metrics.
+- **Preconditions**: `npcDoomed === true`
+- **Returns**: void
+- **Side Effects**: Sets `currentScore` and `currentStars`, displays score modal
+- **Scoring Factors**:
+  - Base doom score: 1000 points
+  - Efficiency bonus: `max(0, 500 - ((objectCount - 1) × 20))`
+  - Speed bonus: `max(0, 500 - (doomTime × 50))`
+  - Variety bonus: `uniqueTypes × 100`
+  - Combo multiplier: `1.1 + min((collisionCount - 5) × 0.05, 0.5)` (if collisions > 5)
+- **Star Ratings**:
+  - 1 star: 0-1999 points
+  - 2 stars: 2000-2799 points
+  - 3 stars: 2800+ points
+
+#### `showScoreModal(score, stars, breakdown)`
+Displays the score modal with detailed breakdown.
+- **Parameters**:
+  - `score` (number): Final calculated score
+  - `stars` (number): Star rating (1-3)
+  - `breakdown` (array): Array of scoring breakdown objects
+- **Returns**: void
+- **Side Effects**: Creates/updates modal DOM, displays with animation
+- **Modal Features**:
+  - Animated entrance
+  - Star rating display with emoji
+  - Total score in large, prominent display
+  - Detailed breakdown table
+  - "Continue Building" button to close
 
 #### `togglePause()`
 Toggles simulation pause state.

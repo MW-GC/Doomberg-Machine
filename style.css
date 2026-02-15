@@ -253,3 +253,141 @@ header p {
         margin: 5px 0;
     }
 }
+
+/* Score Modal Styles */
+.score-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.score-modal.show {
+    opacity: 1;
+}
+
+.score-modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    animation: scoreSlideIn 0.5s ease-out;
+}
+
+@keyframes scoreSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.score-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.score-header h2 {
+    color: #667eea;
+    font-size: 2.5em;
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.score-stars {
+    font-size: 3em;
+    letter-spacing: 10px;
+    animation: starPulse 1s ease-in-out infinite;
+}
+
+@keyframes starPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.score-total {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 15px;
+    color: white;
+}
+
+.score-number {
+    font-size: 3.5em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.score-label {
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+.score-breakdown {
+    margin-bottom: 30px;
+}
+
+.score-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.score-table tr {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.score-table td {
+    padding: 12px 10px;
+    font-size: 1.1em;
+}
+
+.score-table td:first-child {
+    color: #495057;
+}
+
+.score-table td:last-child {
+    text-align: right;
+    font-weight: bold;
+    color: #28a745;
+}
+
+.score-table td.multiplier {
+    color: #ffc107;
+    font-size: 1.3em;
+}
+
+#closeScoreModal {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.2em;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+#closeScoreModal:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}

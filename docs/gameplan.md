@@ -501,14 +501,17 @@ function playback() {
 
 ---
 
-#### 10. Scoring System
+#### 10. Scoring System ✅ **IMPLEMENTED**
 **Priority**: Medium  
 **Effort**: Medium  
-**Value**: Medium
+**Value**: Medium  
+**Status**: ✅ Completed (February 2026)
 
 **Description**: Score contraptions based on various metrics
 
-**Scoring Factors**:
+**Implementation**:
+
+**Scoring Metrics Implemented**:
 ```javascript
 function calculateScore() {
     let score = 0;
@@ -517,33 +520,53 @@ function calculateScore() {
     if (npcDoomed) score += 1000;
     
     // Efficiency bonus (fewer objects = higher score)
-    const objectBonus = Math.max(0, 500 - (placedObjects.length * 20));
+    const objectBonus = Math.max(0, 500 - ((placedObjects.length - 1) * 20));
     score += objectBonus;
     
     // Speed bonus (faster doom = higher score)
-    const timeBonus = Math.max(0, 500 - (doomTime * 10));
-    score += timeBonus;
+    const speedBonus = Math.max(0, 500 - (doomTime * 50));
+    score += speedBonus;
     
-    // Creativity bonus (variety of objects used)
-    const uniqueTypes = new Set(placedObjects.map(o => o.label)).size;
+    // Variety bonus (different object types used)
+    const uniqueTypes = objectTypesUsed.size;
     score += uniqueTypes * 100;
     
     // Combo multiplier (chain reactions)
-    score *= comboMultiplier;
+    let comboMultiplier = 1.0;
+    if (collisionCount >= 5) {
+        comboMultiplier = 1.1 + Math.min((collisionCount - 5) * 0.05, 0.5);
+    }
+    score = Math.round(score * comboMultiplier);
     
     return score;
 }
 ```
 
-**Display**:
-- Show score after doom
-- Leaderboard (local or online)
-- Star rating (1-3 stars based on score)
+**Star Rating System**:
+- ⭐ 1 Star: 0-1,999 points
+- ⭐⭐ 2 Stars: 2,000-2,799 points
+- ⭐⭐⭐ 3 Stars: 2,800+ points
+
+**Display Implementation**:
+- Animated score modal appears 1 second after doom
+- Shows star rating with emoji (⭐⭐⭐)
+- Large, prominent total score display
+- Detailed breakdown table with color-coded values
+- "Continue Building" button to dismiss
+
+**Features Delivered**:
+- ✅ Tracks object count, completion time, object variety
+- ✅ Calculates score based on efficiency, speed, variety, and success
+- ✅ Implements combo multipliers for chain reactions
+- ✅ Beautiful animated modal with score breakdown
+- ✅ Star rating system (1-3 stars)
+- ✅ Comprehensive documentation in gameplay.md and technical.md
 
 **Benefits**:
-- Adds challenge and replayability
-- Encourages optimization
-- Competition and community engagement
+- ✅ Adds challenge and replayability
+- ✅ Encourages optimization and experimentation
+- ✅ Provides clear performance feedback
+- ✅ Foundation for future leaderboards and challenges
 
 ---
 
@@ -930,18 +953,19 @@ if (placedObjects.length >= MAX_OBJECTS) {
 
 ### Phase 1: Quick Wins (1-2 weeks)
 1. ✅ Object deletion (right-click) - **COMPLETED**
-2. Object counter display
-3. Pause/play button
+2. ✅ Object counter display - **COMPLETED**
+3. ✅ Pause/play button - **COMPLETED**
 4. ✅ Undo/redo system - **COMPLETED**
-5. Bug fixes (tunneling, reset issues)
+5. ✅ Slow-motion control - **COMPLETED**
+6. ✅ Bug fixes (tunneling, reset issues) - **COMPLETED**
 
 **Impact**: High usability improvements with minimal effort  
-**Status**: 2/5 completed (40%)
+**Status**: ✅ 6/6 completed (100%)
 
 ### Phase 2: Core Features (3-4 weeks)
 1. ✅ Save/load system (localStorage) - **COMPLETED**
 2. More object types (spring, explosive)
-3. Scoring system
+3. ✅ Scoring system - **COMPLETED**
 4. Grid/snap toggle
 5. Sound effects
 
@@ -973,10 +997,10 @@ if (placedObjects.length >= MAX_OBJECTS) {
 ```
 High Value, Low Effort:
 - ✅ Object deletion (COMPLETED Feb 2026)
-- Object counter
-- Pause button
+- ✅ Object counter (COMPLETED Feb 2026)
+- ✅ Pause button (COMPLETED Feb 2026)
 - ✅ Undo/redo system (COMPLETED Feb 2026)
-- Bug fixes
+- ✅ Bug fixes (COMPLETED Feb 2026)
 
 High Value, High Effort:
 - ✅ Save/load system (COMPLETED Feb 2026)
@@ -984,10 +1008,14 @@ High Value, High Effort:
 - Mobile support
 - More object types
 
+Medium Value, Medium Effort:
+- ✅ Scoring system (COMPLETED Feb 2026)
+- Grid toggle
+- Sound effects
+
 Low Value, Low Effort:
 - Theme system
 - Analytics
-- Grid toggle
 
 Low Value, High Effort:
 - (Avoid these)
