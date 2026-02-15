@@ -443,15 +443,19 @@ function toggleSlowMotion() {
         slowMotionBtn.classList.remove('active');
         if (!isPaused) {
             engine.timing.timeScale = 1.0;
+            updateStatus('Slow motion disabled. Running at normal speed.');
+        } else {
+            updateStatus('Normal speed will be used when simulation resumes.');
         }
-        updateStatus('Normal speed will be used when simulation resumes.');
     } else {
         // Turn on slow motion
         slowMotionBtn.classList.add('active');
         if (!isPaused) {
             engine.timing.timeScale = 0.25;
+            updateStatus('Slow motion enabled (25% speed).');
+        } else {
+            updateStatus('Slow motion will be used when simulation resumes.');
         }
-        updateStatus('Slow motion enabled (25% speed).');
     }
     
     updateSlowMotionButtonText();
