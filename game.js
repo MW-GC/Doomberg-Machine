@@ -22,6 +22,12 @@ const MAX_HISTORY_SIZE = 50; // Maximum undo/redo history entries to prevent mem
 const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
 const LABEL_SEESAW_PLANK = 'seesaw-plank';
 
+// Physics constants
+const POSITION_ITERATIONS = 10; // Increased from default 6 to reduce tunneling
+const VELOCITY_ITERATIONS = 6;  // Increased from default 4 to reduce tunneling
+const DOOM_VELOCITY_THRESHOLD = 2; // Minimum velocity to doom NPC
+const MAX_OBJECTS = 100; // Maximum number of objects allowed for performance
+
 /**
  * Normalize an angle in radians to the range [0, 2π).
  * @param {number} angle
@@ -66,10 +72,14 @@ let historyIndex = -1;
 function init() {
     canvas = document.getElementById('gameCanvas');
     
-    // Create engine
+    // Create engine with improved iteration settings to prevent tunneling
     engine = Engine.create();
     world = engine.world;
     world.gravity.y = 1;
+    
+    // Increase iterations to prevent fast objects from tunneling through static bodies
+    engine.positionIterations = POSITION_ITERATIONS;
+    engine.velocityIterations = VELOCITY_ITERATIONS;
     
     // Create renderer
     render = Render.create({
@@ -126,7 +136,7 @@ function init() {
                 const otherBody = pair.bodyA.label === 'npc' ? pair.bodyB : pair.bodyA;
                 const velocity = Math.abs(otherBody.velocity.x) + Math.abs(otherBody.velocity.y);
                 
-                if (velocity > 2) {
+                if (velocity > DOOM_VELOCITY_THRESHOLD) {
                     npcDoomed = true;
                     doomNPC();
                 }
@@ -392,6 +402,10 @@ function createSeesaw(x, y, seesawId = null) {
     });
     constraint.seesawId = seesawId;
     
+    // Store original constraint properties for reset
+    constraint.originalStiffness = constraint.stiffness;
+    constraint.originalLength = constraint.length;
+    
     // Add to world
     Composite.add(world, [pivot, plank, constraint]);
     placedObjects.push(pivot, plank);
@@ -559,6 +573,13 @@ function updateUndoRedoButtons() {
 }
 
 function placeObject(type, x, y) {
+    // Check if we've reached the maximum object limit
+    if (placedObjects.length >= MAX_OBJECTS) {
+        updateStatus(`Maximum object limit (${MAX_OBJECTS}) reached! Please remove some objects first.`);
+        alert(`Maximum object limit (${MAX_OBJECTS}) reached!\n\nFor optimal performance, please clear some objects before adding more.`);
+        return;
+    }
+    
     let body;
     
     switch(type) {
@@ -613,6 +634,8 @@ function placeObject(type, x, y) {
             
         case 'seesaw':
             // Create seesaw using helper function
+            // createSeesaw already adds pivot, plank, and constraint to the world
+            // and tracks them in placedObjects / placedConstraints.
             const { pivot, plank, constraint } = createSeesaw(x, y);
             const seesawId = pivot.seesawId; // Get the generated ID
             
@@ -808,6 +831,15 @@ function resetMachine() {
         }
     });
     
+    // Reset all constraints to their original properties
+    placedConstraints.forEach(constraint => {
+        if (constraint.originalStiffness !== undefined) {
+            constraint.stiffness = constraint.originalStiffness;
+        }
+        if (constraint.originalLength !== undefined) {
+            constraint.length = constraint.originalLength;
+        }
+    });
     // Reset timeScale
     engine.timing.timeScale = 1.0;
     
