@@ -718,7 +718,7 @@ function deleteObjectAtPosition(x, y) {
             updateStatus('Deleted seesaw');
         } else {
             // Determine object type from body properties
-            let objectType = 'object';
+            let objectType;
             if (body.circleRadius) {
                 objectType = 'ball';
             } else if (body.isStatic) {
