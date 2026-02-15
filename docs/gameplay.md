@@ -262,9 +262,52 @@ The game includes a complete save/load system that stores your contraptions in y
 | Undo | `Ctrl+Z` or Click "↶ Undo" |
 | Redo | `Ctrl+Y` or `Ctrl+Shift+Z` or Click "↷ Redo" |
 | Toggle Sound | Click "🔊 Sound" button |
+| Change Theme | Select from "🎨 Theme" dropdown |
 | Save Design | Type name and click "💾 Save" or press `Enter` |
 | Load Design | Select from dropdown and click "📂 Load" |
 | Delete Saved Design | Select from dropdown and click "🗑️ Delete" |
+
+## 🎨 Visual Themes
+
+Doomberg Machine offers **6 visual themes** to personalize your gameplay experience:
+
+### Classic Theme (Default)
+- Vibrant purple and pink gradient header
+- Sky blue canvas with brown ground
+- Colorful game objects with high contrast
+- Perfect for traditional gameplay
+
+### Dark Theme
+- Deep blue and purple dark color scheme
+- Dark canvas background for reduced eye strain
+- Muted but visible object colors
+- Great for night-time play or dark mode enthusiasts
+
+### Neon Theme
+- High-contrast cyberpunk aesthetic
+- Bright neon colors (magenta, cyan, yellow, green)
+- Black background with glowing borders
+- Intense visual experience for maximum energy
+
+### Retro Theme
+- Warm peachy and rose tones
+- Vintage color palette inspired by 80s/90s design
+- Soft, comfortable colors
+- Nostalgic and inviting atmosphere
+
+### Minimalist Theme
+- Clean black, white, and gray palette
+- High contrast for clarity
+- Modern, professional appearance
+- Focuses attention on gameplay mechanics
+
+### Holiday Theme
+- Festive red and green color scheme
+- Warm cream and brown accents
+- Christmas/winter holiday aesthetic
+- Seasonal charm and cheer
+
+**Theme Persistence**: Your selected theme is automatically saved in your browser and will be remembered when you return!
 
 ## ❓ Frequently Asked Questions
 

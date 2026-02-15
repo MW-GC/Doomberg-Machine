@@ -342,6 +342,90 @@ function playSound(type) {
 - Loaded during initialization via `loadSoundPreference()`
 - Toggle button updates with mute icon (🔇) when disabled
 
+### 9. Theme System
+
+**Theme Architecture**:
+The game features a comprehensive visual theming system that allows players to customize the entire visual appearance of the game. Themes affect both UI elements (via CSS custom properties) and game objects (via Matter.js render colors).
+
+**Available Themes**:
+1. **Classic** (Default): Vibrant purple/pink gradients, sky blue canvas
+2. **Dark**: Deep blue/purple dark mode, muted colors for night play
+3. **Neon**: Cyberpunk aesthetic with bright magenta/cyan/yellow on black
+4. **Retro**: Warm peachy tones inspired by 80s/90s design
+5. **Minimalist**: Clean black/white/gray professional palette
+6. **Holiday**: Festive red/green Christmas color scheme
+
+**Theme Data Structure**:
+```javascript
+const THEMES = {
+    themeName: {
+        name: 'Display Name',
+        // CSS custom properties
+        bodyBg: 'gradient...',
+        headerBg: 'gradient...',
+        controlsBg: '#color',
+        // ... 30+ color properties
+        
+        // Canvas/Game colors
+        canvasBg: '#color',
+        groundColor: '#color',
+        wallColor: '#color',
+        gridColor: 'rgba(...)',
+        
+        // Object colors
+        ballColor: '#color',
+        boxColor: '#color',
+        // ... 8 object types
+        
+        // NPC colors
+        npcBodyColor: '#color',
+        npcLimbColor: '#color',
+        npcFootColor: '#color',
+        
+        // Particle color
+        particleColor: '#color'
+    }
+};
+```
+
+**Theme Application**:
+```javascript
+function applyTheme(themeName) {
+    const theme = THEMES[themeName];
+    
+    // 1. Update CSS custom properties on :root
+    document.documentElement.style.setProperty('--body-bg', theme.bodyBg);
+    // ... 25+ CSS variables
+    
+    // 2. Update Matter.js renderer background
+    render.options.background = theme.canvasBg;
+    
+    // 3. Update existing static bodies (ground, walls)
+    // 4. Update NPC colors across all body parts
+    // 5. Update all placed objects using updateObjectColor()
+    // 6. Save preference to localStorage
+}
+```
+
+**Theme Persistence**:
+- Theme selection stored in localStorage as `doomberg_theme`
+- Loaded during initialization via `loadThemePreference()`
+- Automatically applied before renderer starts
+- Theme selector dropdown synchronized with current theme
+
+**Accessibility Considerations**:
+- All themes tested for WCAG AA contrast ratios
+- Dark theme provides reduced eye strain for night play
+- Minimalist theme maximizes clarity and focus
+
+### 10. Save/Load System
+
+**Architecture**:
+- Uses browser localStorage for persistent storage
+- Serializes contraption state to JSON
+- Supports multiple saved designs per browser
+- Each save includes object types, positions, angles, and IDs
+
 ## ⚙️ Physics Engine
 
 ### Matter.js Integration
