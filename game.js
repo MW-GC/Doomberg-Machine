@@ -544,6 +544,8 @@ function revertAction(action) {
             removeSeesaw(action.seesawId);
         } else {
             // Remove single object
+            // Note: If object was removed during runtime (e.g., explosive detonation),
+            // this check will fail gracefully and skip removal
             const body = action.body;
             if (body && placedObjects.includes(body)) {
                 Composite.remove(world, body);
