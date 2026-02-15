@@ -46,6 +46,7 @@ let world;
 let canvas;
 let selectedTool = null;
 let isRunning = false;
+let isPaused = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
@@ -239,9 +240,20 @@ function setupEventListeners() {
     document.getElementById('runBtn').addEventListener('click', runMachine);
     document.getElementById('resetBtn').addEventListener('click', resetMachine);
     document.getElementById('clearBtn').addEventListener('click', clearAll);
+    document.getElementById('pauseBtn').addEventListener('click', togglePause);
+    document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
     
     // Keyboard controls for rotating ramps
     document.addEventListener('keydown', (event) => {
+        // Space key for pause/unpause
+        if (event.key === ' ' || event.key === 'Spacebar') {
+            if (isRunning) {
+                event.preventDefault(); // Prevent page scroll
+                togglePause();
+            }
+            return;
+        }
+        
         if (isRunning || selectedTool !== 'ramp') return;
         
         if (event.key === 'q' || event.key === 'Q') {
@@ -376,10 +388,14 @@ function runMachine() {
     if (isRunning) return;
     
     isRunning = true;
+    isPaused = false;
     npcDoomed = false;
     
     // Make NPC dynamic
     Body.setStatic(npc, false);
+    
+    // Reset timeScale to normal
+    engine.timing.timeScale = 1.0;
     
     // Create or reuse runner
     if (!runner) {
@@ -388,7 +404,71 @@ function runMachine() {
     Runner.run(runner, engine);
     
     document.getElementById('runBtn').disabled = true;
+    document.getElementById('pauseBtn').disabled = false;
+    document.getElementById('slowMotionBtn').disabled = false;
+    updatePauseButtonText();
+    updateSlowMotionButtonText();
     updateStatus('Machine running! Watch the chaos unfold...');
+}
+
+function togglePause() {
+    if (!isRunning) return;
+    
+    isPaused = !isPaused;
+    
+    if (isPaused) {
+        engine.timing.timeScale = 0;
+        updateStatus('Simulation paused. Press Space or click Pause to resume.');
+    } else {
+        // Resume at normal or slow-motion speed
+        const slowMotionBtn = document.getElementById('slowMotionBtn');
+        if (slowMotionBtn.classList.contains('active')) {
+            engine.timing.timeScale = 0.25;
+        } else {
+            engine.timing.timeScale = 1.0;
+        }
+        updateStatus('Machine running! Watch the chaos unfold...');
+    }
+    
+    updatePauseButtonText();
+}
+
+function toggleSlowMotion() {
+    if (!isRunning || isPaused) return;
+    
+    const slowMotionBtn = document.getElementById('slowMotionBtn');
+    
+    if (slowMotionBtn.classList.contains('active')) {
+        // Turn off slow motion
+        slowMotionBtn.classList.remove('active');
+        engine.timing.timeScale = 1.0;
+        updateStatus('Normal speed resumed.');
+    } else {
+        // Turn on slow motion
+        slowMotionBtn.classList.add('active');
+        engine.timing.timeScale = 0.25;
+        updateStatus('Slow motion enabled (25% speed).');
+    }
+    
+    updateSlowMotionButtonText();
+}
+
+function updatePauseButtonText() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (isPaused) {
+        pauseBtn.textContent = '▶️ Play';
+    } else {
+        pauseBtn.textContent = '⏸️ Pause';
+    }
+}
+
+function updateSlowMotionButtonText() {
+    const slowMotionBtn = document.getElementById('slowMotionBtn');
+    if (slowMotionBtn.classList.contains('active')) {
+        slowMotionBtn.textContent = '🐌 Slow-Mo: ON';
+    } else {
+        slowMotionBtn.textContent = '🐌 Slow-Mo';
+    }
 }
 
 function doomNPC() {
@@ -428,9 +508,18 @@ function resetMachine() {
         }
     });
     
+    // Reset timeScale
+    engine.timing.timeScale = 1.0;
+    
     isRunning = false;
+    isPaused = false;
     npcDoomed = false;
     document.getElementById('runBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('slowMotionBtn').disabled = true;
+    document.getElementById('slowMotionBtn').classList.remove('active');
+    updatePauseButtonText();
+    updateSlowMotionButtonText();
     
     const doomStatus = document.getElementById('doomStatus');
     doomStatus.textContent = 'NPC Status: Alive 😊';

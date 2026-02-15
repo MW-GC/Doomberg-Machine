@@ -107,6 +107,23 @@ header p {
     opacity: 0.6;
 }
 
+.action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.action-btn.active {
+    background: #ffc107;
+    color: #000;
+    border-color: #ffc107;
+    font-weight: bold;
+}
+
+.action-btn.active:hover {
+    background: #e0a800;
+    border-color: #e0a800;
+}
+
 #status {
     padding: 10px;
     background: #e9ecef;
