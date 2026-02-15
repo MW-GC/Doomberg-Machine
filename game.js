@@ -870,7 +870,7 @@ function calculateAndDisplayScore() {
     // Combo multiplier based on collision chains
     // More collisions = more chain reactions
     let comboMultiplier = 1.0;
-    if (collisionCount > 5) {
+    if (collisionCount >= 5) {
         comboMultiplier = 1.1 + Math.min((collisionCount - 5) * 0.05, 0.5); // Max 1.6x
         breakdown.push({ label: `Combo Chain (${collisionCount} collisions)`, points: 0, multiplier: comboMultiplier });
     }

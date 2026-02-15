@@ -132,7 +132,7 @@ When you successfully doom the NPC, your contraption is scored based on four key
 **🔥 Combo Multiplier (1.0x - 1.6x)**
 - More collisions = higher multiplier
 - Activates when you have 5+ collisions
-- Formula: `1.1 + ((collisions - 5) × 0.05)`
+- Formula: `1.1 + min((collisions - 5) × 0.05, 0.5)`
 - Maximum multiplier: 1.6x (at 15+ collisions)
 - Rewards complex chain reactions!
 
@@ -158,9 +158,11 @@ Your final score determines your star rating:
 - 10 objects, 5 seconds, 6 types, 20+ collisions
 - Score: (1,000 + 320 + 250 + 600) × 1.6 = 3,472 (⭐⭐⭐)
 
-**Perfect Machine (The Dream)**
-- 1 object, 0.5 seconds, 1 type, minimal collisions
-- Score: 1,000 + 500 + 475 + 100 = 2,075 (⭐⭐)
+**Speed Demon (Fast & Efficient)**
+- 3 objects, 0.8 seconds, 3 types, 12 collisions
+- Base: 1,000 + 460 + 460 + 300 = 2,220
+- Multiplier: 1.1 + (12 - 5) × 0.05 = 1.45x
+- Score: 2,220 × 1.45 = 3,219 (⭐⭐⭐)
 
 To get 3 stars, focus on:
 - Fast completion (under 2 seconds)
