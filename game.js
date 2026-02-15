@@ -1603,12 +1603,12 @@ function startReplay() {
     // Create a custom runner for replay
     if (!replayRunner) {
         replayRunner = Runner.create({
-            isFixed: true,
+            isFixed: true,  // Fixed timestep ensures deterministic frame timing for consistent replay
             delta: 1000 / 60  // 60 FPS
         });
     }
     
-    // Use afterUpdate event to apply recorded frames
+    // Store handler reference to remove it later
     const replayHandler = () => {
         if (!isReplaying || replayFrameIndex >= recordedFrames.length) {
             stopReplay();
