@@ -75,6 +75,11 @@ header p {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.action-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
+}
+
 .tool-btn:focus, .action-btn:focus {
     outline: 3px solid #4CAF50;
     outline-offset: 2px;
@@ -105,6 +110,23 @@ header p {
     border-color: #6c757d;
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+.action-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.action-btn.active {
+    background: #ffc107;
+    color: #000;
+    border-color: #ffc107;
+    font-weight: bold;
+}
+
+.action-btn.active:hover {
+    background: #e0a800;
+    border-color: #e0a800;
 }
 
 #status {
