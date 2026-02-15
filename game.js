@@ -356,6 +356,7 @@ function placeObject(type, x, y) {
             placedObjects.push(pivot, plank);
             placedConstraints.push(constraint);
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
+            updateObjectCounter();
             return;
     }
     
@@ -367,6 +368,7 @@ function placeObject(type, x, y) {
         Composite.add(world, body);
         placedObjects.push(body);
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
+        updateObjectCounter();
     }
 }
 
@@ -454,10 +456,19 @@ function clearAll() {
     }
     
     updateStatus('All objects cleared! Start building your machine.');
+    updateObjectCounter();
 }
 
 function updateStatus(message) {
     document.getElementById('status').textContent = message;
+}
+
+/**
+ * Update the object counter display to show the current number of placed objects.
+ * Note: Seesaws count as 2 objects since they consist of both a pivot and plank body.
+ */
+function updateObjectCounter() {
+    document.getElementById('objectCounter').textContent = `Objects: ${placedObjects.length}`;
 }
 
 function deleteObjectAtPosition(x, y) {
@@ -507,6 +518,9 @@ function deleteObject(body) {
         placedObjects = placedObjects.filter(obj => obj !== body);
         updateStatus('Deleted object');
     }
+    
+    // Update the object counter after deletion
+    updateObjectCounter();
 }
 
 // Initialize game when page loads
