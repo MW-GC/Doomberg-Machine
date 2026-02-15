@@ -469,6 +469,160 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
 - No cross-browser sync
 - Cleared with browser data
 
+### 10. Mobile Support System
+
+**Overview**:
+The game includes comprehensive mobile and touch device support with optimized controls, responsive UI, and performance tuning.
+
+**Mobile Detection**:
+```javascript
+const isMobile = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           window.innerWidth < 768;
+};
+```
+
+**Touch Controls Implementation**:
+
+**Single Touch (Placement/Delete)**:
+```javascript
+canvas.addEventListener('touchstart', (event) => {
+    event.preventDefault();
+    
+    if (event.touches.length === 1) {
+        // Single touch - placement or long press to delete
+        const touch = event.touches[0];
+        touchStartTime = Date.now();
+        
+        // Convert touch coordinates to canvas coordinates
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        touchStartPos.x = (touch.clientX - rect.left) * scaleX;
+        touchStartPos.y = (touch.clientY - rect.top) * scaleY;
+        
+        // Start long press timer for delete (500ms)
+        longPressTimer = setTimeout(() => {
+            deleteObjectAtPosition(touchStartPos.x, touchStartPos.y);
+            if (navigator.vibrate) {
+                navigator.vibrate(50); // Haptic feedback
+            }
+        }, LONG_PRESS_DURATION);
+    }
+}, { passive: false });
+```
+
+**Two-Finger Rotation (Ramps)**:
+```javascript
+if (event.touches.length === 2 && selectedTool === 'ramp') {
+    // Calculate angle between two touches
+    const currentAngle = getTouchAngle(event.touches[0], event.touches[1]);
+    const angleDelta = currentAngle - lastTouchAngle;
+    
+    // Update ramp angle
+    rotateRamp(angleDelta);
+    lastTouchAngle = currentAngle;
+    
+    // Subtle haptic feedback
+    if (navigator.vibrate) {
+        navigator.vibrate(5);
+    }
+}
+```
+
+**Touch Event Features**:
+- **Placement**: Tap to place objects (same as click)
+- **Deletion**: Long-press (500ms) to delete (replaces right-click)
+- **Rotation**: Two-finger twist gesture for ramps (replaces Q/E keys)
+- **Haptic Feedback**: Vibration API for tactile feedback on supported devices
+- **Prevent Default**: All touch events prevent default to avoid unwanted zoom/scroll
+
+**Responsive UI Adaptations**:
+
+**Mobile-Specific Styles** (screen width < 768px):
+```css
+@media (max-width: 768px) {
+    /* Larger touch targets */
+    .tool-btn, .action-btn {
+        padding: 15px;
+        font-size: 1.1em;
+        min-height: 44px; /* Apple's touch target recommendation */
+    }
+    
+    /* Collapsible sections */
+    .control-group h3 {
+        cursor: pointer;
+        background: #667eea;
+        color: white;
+    }
+    
+    .control-group.collapsed > *:not(h3) {
+        display: none;
+    }
+}
+```
+
+**UI Features**:
+- **Collapsible Sections**: Objects and Save/Load sections start collapsed
+- **Full-Width Buttons**: All buttons expand to full width for easier tapping
+- **Larger Text**: Increased font sizes for readability
+- **Touch Feedback**: Active states with scale transform on button press
+- **Canvas Scaling**: Canvas automatically scales to fit mobile screens
+
+**Performance Optimizations**:
+
+**Reduced Physics Iterations**:
+```javascript
+if (isMobile()) {
+    engine.positionIterations = 8;   // Desktop: 10
+    engine.velocityIterations = 4;   // Desktop: 6
+}
+```
+
+**Canvas Pixel Ratio**:
+```javascript
+render = Render.create({
+    canvas: canvas,
+    engine: engine,
+    options: {
+        pixelRatio: isMobile() ? 1 : window.devicePixelRatio || 1
+    }
+});
+```
+
+**Mobile-Specific Features**:
+- Reduced physics simulation precision for better performance
+- Lower pixel ratio to reduce rendering overhead
+- Optimized event listeners with passive: false only where needed
+- Touch action controls to prevent interference with scrolling
+
+**Viewport Configuration**:
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+```
+- Prevents unwanted pinch-to-zoom
+- Fixed initial scale
+- Optimized for mobile viewing
+
+**Mobile Instructions**:
+The game automatically updates instructions when mobile is detected:
+- Tap instead of click
+- Long-press instead of right-click
+- Two-finger rotation explained
+- Collapsible sections usage
+
+**Browser Compatibility**:
+- iOS Safari: ✅ Full support
+- Android Chrome: ✅ Full support
+- Android Firefox: ✅ Full support
+- Other mobile browsers: ✅ Should work (standards-compliant)
+
+**Known Mobile Limitations**:
+- Keyboard shortcuts unavailable (no physical keyboard)
+- Smaller screen may limit visibility of large contraptions
+- Performance varies by device (older devices may experience lag)
+- Haptic feedback only on supported devices
+
 ### Constraints
 
 **Seesaw Constraint**:
