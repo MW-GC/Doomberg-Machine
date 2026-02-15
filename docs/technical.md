@@ -305,6 +305,75 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
   ```
 - This ensures NPC feet are placed at ground level (y=580) when created, preventing the NPC from falling through the ground when made dynamic
 
+### 9. Save/Load System
+
+**Architecture**:
+- Uses browser localStorage for persistent storage
+- Serializes contraption state to JSON
+- Supports multiple saved designs per browser
+- Each save includes object types, positions, angles, and IDs
+
+**Save Data Structure**:
+```javascript
+{
+    version: 1,                    // Format version for future compatibility
+    timestamp: 1708034567890,      // Unix timestamp (ms)
+    name: "My Awesome Machine",    // User-provided name
+    objects: [
+        {
+            type: "ball",
+            x: 259.5,
+            y: 190.2,
+            angle: 0
+        },
+        {
+            type: "ramp",
+            x: 358.0,
+            y: 289.5,
+            angle: -0.297  // Radians
+        },
+        {
+            type: "seesaw",
+            x: 557.0,
+            y: 388.0,
+            angle: 0,
+            seesawId: 0    // For complex objects
+        }
+        // ... more objects
+    ]
+}
+```
+
+**Storage Keys**:
+- Pattern: `doomberg_{designName}`
+- Example: `doomberg_Test Machine 1`
+- Easy filtering and management
+
+**Features**:
+- **Save**: Captures all placed objects with exact positions and angles
+- **Load**: Clears workspace and recreates objects from saved data
+- **List**: Populates dropdown with all saved designs
+- **Delete**: Removes saved design with confirmation
+- **Validation**: Checks version compatibility before loading
+
+**Complex Object Handling**:
+- Seesaws saved once using pivot position
+- Constraint properties not stored (recreated on load)
+- `seesawId` is saved in the JSON data and used to avoid duplication during serialization
+- `seesawId` values are restored when loading and `seesawIdCounter` is synchronized to prevent ID collisions
+
+**Error Handling**:
+- Try-catch blocks around localStorage operations
+- Storage quota exceeded alerts
+- Corrupted data fallback
+- Missing design notifications
+
+**Limitations**:
+- Browser-specific (localStorage per origin)
+- Storage quota: ~5-10MB typical
+- No cross-browser sync
+- Cleared with browser data
+
 ### Constraints
 
 **Seesaw Constraint**:
@@ -460,6 +529,46 @@ Applies appropriate timeScale based on current state.
   - Paused: `0`
   - Slow-motion (not paused): `0.25`
   - Normal (not paused): `1.0`
+
+#### `saveContraption(name)`
+Saves current contraption design to localStorage.
+- **Parameters**: `name` (string): Name for the saved design (max 30 chars)
+- **Returns**: void
+- **Side Effects**: Serializes objects to JSON, stores in localStorage with key `doomberg_{name}`
+- **Format**: Stores object type, position, angle, and seesawId (for seesaws)
+- **Notes**: Handles complex objects (seesaws) by storing only once using pivot position
+
+#### `loadContraption(name)`
+Loads a contraption design from localStorage.
+- **Parameters**: `name` (string): Name of saved design to load
+- **Returns**: void
+- **Side Effects**: Clears current objects, recreates objects from saved data
+- **Error Handling**: Shows alert if design not found or data corrupted
+- **Notes**: Calls `placeObject()` for each saved object, restores angles for ramps
+
+#### `listSavedContraptions()`
+Gets list of all saved contraption names.
+- **Returns**: Array<string> - Sorted array of saved design names
+- **Notes**: Filters localStorage keys starting with `doomberg_`
+
+#### `deleteContraption(name)`
+Deletes a saved contraption from localStorage.
+- **Parameters**: `name` (string): Name of design to delete
+- **Returns**: void
+- **Side Effects**: Removes from localStorage, refreshes dropdown list
+- **Confirmation**: Shows browser confirm dialog before deletion
+
+#### `refreshSavedList()`
+Updates the saved designs dropdown menu.
+- **Returns**: void
+- **Side Effects**: Populates `<select id="savedList">` with saved design names
+- **Notes**: Called after save/load/delete operations and on init
+
+#### `getObjectType(body)`
+Helper function to determine object type from a Matter.js body.
+- **Parameters**: `body` (Body): Matter.js body
+- **Returns**: string - Object type identifier ('ball', 'box', 'domino', 'ramp', 'platform', 'seesaw')
+- **Logic**: Uses body properties (circleRadius, isStatic, dimensions) to identify type
 
 ### Utility Functions
 
