@@ -35,6 +35,168 @@ const MAX_SAVE_NAME_LENGTH = 30; // Maximum characters for save design names
 const PLATFORM_MIN_WIDTH = 140; // Platforms are wider than ramps (150 vs 120)
 const DOMINO_MIN_HEIGHT = 50; // Dominoes are taller than boxes (60 vs 40)
 
+// Level System Constants
+const LEVEL_STORAGE_KEY = 'doomberg_level_progress';
+const ALL_OBJECT_TYPES = ['ball', 'box', 'domino', 'ramp', 'platform', 'seesaw', 'spring', 'explosive'];
+
+/**
+ * Level definitions
+ * Each level has:
+ * - id: unique level identifier
+ * - name: display name
+ * - description: level objective description
+ * - npcPosition: {x, y} position for NPC
+ * - preplacedObjects: array of objects to place before player builds
+ * - allowedObjects: array of allowed object types (empty = all allowed)
+ * - maxObjects: maximum number of objects player can place
+ * - timeLimit: optional time limit in seconds (null = no limit)
+ * - hints: array of hint strings for the player
+ * - starThresholds: score required for 1, 2, 3 stars [min, 2star, 3star]
+ */
+const LEVELS = [
+    {
+        id: 1,
+        name: "First Contact",
+        description: "Learn the basics: Place a ball and doom the NPC!",
+        npcPosition: { x: 1000, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [],
+        allowedObjects: ['ball'],
+        maxObjects: 3,
+        timeLimit: null,
+        hints: [
+            "Click the Ball button, then click above the NPC to place it",
+            "Gravity will do the rest - watch the ball fall!",
+            "Press 'Run Machine' to start the simulation"
+        ],
+        starThresholds: [1000, 1400, 1800]
+    },
+    {
+        id: 2,
+        name: "Ramp It Up",
+        description: "Use a ramp to redirect a ball toward the NPC",
+        npcPosition: { x: 900, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [
+            { type: 'platform', x: 200, y: 300, angle: 0 }
+        ],
+        allowedObjects: ['ball', 'ramp'],
+        maxObjects: 5,
+        timeLimit: null,
+        hints: [
+            "Place a ball on the platform at the left",
+            "Use a ramp to guide the ball toward the NPC",
+            "Angle matters! The ramp has a default angle"
+        ],
+        starThresholds: [1000, 1600, 2200]
+    },
+    {
+        id: 3,
+        name: "Chain Reaction",
+        description: "Create a domino chain to hit the NPC",
+        npcPosition: { x: 1000, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [
+            { type: 'ball', x: 100, y: 200, angle: 0 }
+        ],
+        allowedObjects: ['domino'],
+        maxObjects: 10,
+        timeLimit: null,
+        hints: [
+            "Place dominoes in a line from the ball to the NPC",
+            "Space them close enough to knock each other down",
+            "Watch the chain reaction unfold!"
+        ],
+        starThresholds: [1000, 1800, 2400]
+    },
+    {
+        id: 4,
+        name: "Platform Puzzle",
+        description: "Use platforms and boxes to create a path",
+        npcPosition: { x: 1000, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [],
+        allowedObjects: ['ball', 'box', 'platform', 'ramp'],
+        maxObjects: 8,
+        timeLimit: null,
+        hints: [
+            "Build platforms at different heights",
+            "Use boxes to create stepping stones",
+            "Think about how the ball will bounce"
+        ],
+        starThresholds: [1000, 1800, 2600]
+    },
+    {
+        id: 5,
+        name: "Seesaw Master",
+        description: "Use a seesaw to launch an object at the NPC",
+        npcPosition: { x: 950, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [
+            { type: 'platform', x: 200, y: 200, angle: 0 }
+        ],
+        allowedObjects: ['ball', 'box', 'seesaw'],
+        maxObjects: 6,
+        timeLimit: null,
+        hints: [
+            "Place a seesaw in the middle area",
+            "Drop a ball on one side to launch the other",
+            "A box on the low end can be launched by a falling ball"
+        ],
+        starThresholds: [1000, 2000, 2800]
+    },
+    {
+        id: 6,
+        name: "Spring Thing",
+        description: "Bounce your way to victory with springs!",
+        npcPosition: { x: 1000, y: 300 },
+        preplacedObjects: [
+            { type: 'platform', x: 600, y: CANVAS_HEIGHT - GROUND_HEIGHT - 50, angle: 0 }
+        ],
+        allowedObjects: ['ball', 'spring', 'platform'],
+        maxObjects: 7,
+        timeLimit: null,
+        hints: [
+            "Springs have super-high bounciness!",
+            "Place springs to redirect the ball upward",
+            "Build a bouncing path to reach the elevated NPC"
+        ],
+        starThresholds: [1000, 2000, 2800]
+    },
+    {
+        id: 7,
+        name: "Explosive Entry",
+        description: "Use an explosive to blast objects toward the NPC",
+        npcPosition: { x: 1000, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [
+            { type: 'box', x: 700, y: CANVAS_HEIGHT - GROUND_HEIGHT - 50, angle: 0 },
+            { type: 'box', x: 740, y: CANVAS_HEIGHT - GROUND_HEIGHT - 50, angle: 0 }
+        ],
+        allowedObjects: ['ball', 'explosive'],
+        maxObjects: 5,
+        timeLimit: null,
+        hints: [
+            "Explosives detonate on impact!",
+            "Drop a ball on the explosive to trigger it",
+            "The explosion will push the boxes toward the NPC"
+        ],
+        starThresholds: [1000, 1800, 2600]
+    },
+    {
+        id: 8,
+        name: "Master Builder",
+        description: "Combine everything you've learned. Limited objects!",
+        npcPosition: { x: 1050, y: CANVAS_HEIGHT - GROUND_HEIGHT - 100 },
+        preplacedObjects: [
+            { type: 'platform', x: 200, y: 250, angle: 0 }
+        ],
+        allowedObjects: ALL_OBJECT_TYPES,
+        maxObjects: 6,
+        timeLimit: null,
+        hints: [
+            "You have access to all object types",
+            "But you're limited to only 6 objects!",
+            "Plan carefully for maximum efficiency"
+        ],
+        starThresholds: [1000, 2200, 3000]
+    }
+];
+
 /**
  * Normalize an angle in radians to the range [0, 2π).
  * @param {number} angle
@@ -116,6 +278,13 @@ let seesawIdCounter = 0; // Counter for unique seesaw IDs
 // Undo/Redo system
 let actionHistory = [];
 let historyIndex = -1;
+
+// Level system variables
+let gameMode = 'sandbox'; // 'sandbox' or 'level'
+let currentLevel = null; // Current level object
+let levelProgress = {}; // Stores completion data for all levels
+let preplacedLevelObjects = []; // Track preplaced objects separately from player-placed
+let allowedObjectsForLevel = []; // Which objects are allowed in current level
 
 // Sound system
 let soundEnabled = true;
@@ -295,6 +464,247 @@ function loadSoundPreference() {
     updateSoundButton();
 }
 
+/**
+ * Load level progress from localStorage
+ */
+function loadLevelProgress() {
+    const saved = localStorage.getItem(LEVEL_STORAGE_KEY);
+    if (saved) {
+        try {
+            levelProgress = JSON.parse(saved);
+        } catch (e) {
+            console.warn('Failed to load level progress:', e);
+            levelProgress = {};
+        }
+    } else {
+        levelProgress = {};
+    }
+    
+    // Initialize progress for all levels if not exists
+    LEVELS.forEach(level => {
+        if (!levelProgress[level.id]) {
+            levelProgress[level.id] = {
+                unlocked: level.id === 1, // First level unlocked by default
+                completed: false,
+                stars: 0,
+                bestScore: 0
+            };
+        }
+    });
+}
+
+/**
+ * Save level progress to localStorage
+ */
+function saveLevelProgress() {
+    try {
+        localStorage.setItem(LEVEL_STORAGE_KEY, JSON.stringify(levelProgress));
+    } catch (e) {
+        console.error('Failed to save level progress:', e);
+    }
+}
+
+/**
+ * Load a specific level
+ * @param {number} levelId - The ID of the level to load
+ */
+function loadLevel(levelId) {
+    const level = LEVELS.find(l => l.id === levelId);
+    if (!level) {
+        console.error('Level not found:', levelId);
+        return;
+    }
+    
+    // Check if level is unlocked
+    if (!levelProgress[levelId]?.unlocked) {
+        updateStatus('This level is locked. Complete previous levels to unlock!');
+        return;
+    }
+    
+    // Switch to level mode
+    gameMode = 'level';
+    currentLevel = level;
+    allowedObjectsForLevel = level.allowedObjects.length > 0 ? level.allowedObjects : ALL_OBJECT_TYPES;
+    
+    // Clear everything
+    clearAll();
+    
+    // Close level selection modal
+    const levelModal = document.getElementById('levelModal');
+    if (levelModal) {
+        levelModal.classList.remove('show');
+        setTimeout(() => {
+            levelModal.style.display = 'none';
+        }, 300);
+    }
+    
+    // Position NPC at level-specific location
+    Composite.remove(world, npc);
+    createNPC(level.npcPosition.x, level.npcPosition.y);
+    
+    // Place preplaced objects
+    preplacedLevelObjects = [];
+    level.preplacedObjects.forEach(obj => {
+        const body = placeObjectInternal(obj.type, obj.x, obj.y, obj.angle || 0, true);
+        if (body) {
+            preplacedLevelObjects.push(body);
+        }
+    });
+    
+    // Update UI
+    updateAllowedObjectButtons();
+    updateLevelInfoDisplay();
+    updateStatus(`Level ${level.id}: ${level.name} - ${level.description}`);
+}
+
+/**
+ * Return to sandbox mode
+ */
+function returnToSandbox() {
+    gameMode = 'sandbox';
+    currentLevel = null;
+    allowedObjectsForLevel = ALL_OBJECT_TYPES;
+    preplacedLevelObjects = [];
+    
+    // Reset NPC to default position
+    Composite.remove(world, npc);
+    createNPC();
+    
+    // Clear everything
+    clearAll();
+    
+    // Update UI
+    updateAllowedObjectButtons();
+    updateLevelInfoDisplay();
+    updateStatus('Sandbox mode: Build freely with no restrictions!');
+}
+
+/**
+ * Update which object buttons are enabled based on level restrictions
+ */
+function updateAllowedObjectButtons() {
+    const allButtons = document.querySelectorAll('.tool-btn');
+    allButtons.forEach(btn => {
+        const tool = btn.getAttribute('data-tool');
+        if (gameMode === 'level' && allowedObjectsForLevel.length > 0) {
+            if (allowedObjectsForLevel.includes(tool)) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            } else {
+                btn.disabled = true;
+                btn.style.opacity = '0.3';
+                if (selectedTool === tool) {
+                    selectedTool = null;
+                    btn.classList.remove('active');
+                }
+            }
+        } else {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
+    });
+}
+
+/**
+ * Update level info display in UI
+ */
+function updateLevelInfoDisplay() {
+    let levelInfoDiv = document.getElementById('levelInfo');
+    if (!levelInfoDiv) {
+        // Create level info div if it doesn't exist
+        levelInfoDiv = document.createElement('div');
+        levelInfoDiv.id = 'levelInfo';
+        levelInfoDiv.className = 'level-info';
+        const statusDiv = document.getElementById('status');
+        statusDiv.parentNode.insertBefore(levelInfoDiv, statusDiv.nextSibling);
+    }
+    
+    if (gameMode === 'level' && currentLevel) {
+        const playerObjectCount = placedObjects.length - preplacedLevelObjects.length;
+        const objectsLeft = currentLevel.maxObjects - playerObjectCount;
+        
+        levelInfoDiv.innerHTML = `
+            <div class="level-info-header">
+                <strong>Level ${currentLevel.id}: ${currentLevel.name}</strong>
+                ${currentLevel.hints && currentLevel.hints.length > 0 ? '<button id="hintsToggleBtn" class="hints-toggle-btn">💡 Hints</button>' : ''}
+            </div>
+            <div class="level-info-details">
+                <span>Objects: ${playerObjectCount}/${currentLevel.maxObjects}</span>
+                ${currentLevel.timeLimit ? `<span>Time Limit: ${currentLevel.timeLimit}s</span>` : ''}
+            </div>
+            <div id="hintsPanel" class="hints-panel" style="display: none;"></div>
+        `;
+        levelInfoDiv.style.display = 'block';
+        
+        // Add hints toggle listener
+        const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+        if (hintsToggleBtn) {
+            hintsToggleBtn.addEventListener('click', toggleHints);
+        }
+    } else {
+        levelInfoDiv.style.display = 'none';
+    }
+}
+
+/**
+ * Toggle hints panel visibility
+ */
+function toggleHints() {
+    if (!currentLevel || !currentLevel.hints) return;
+    
+    const hintsPanel = document.getElementById('hintsPanel');
+    const hintsToggleBtn = document.getElementById('hintsToggleBtn');
+    
+    if (!hintsPanel || !hintsToggleBtn) return;
+    
+    const isVisible = hintsPanel.style.display !== 'none';
+    
+    if (isVisible) {
+        hintsPanel.style.display = 'none';
+        hintsToggleBtn.textContent = '💡 Hints';
+    } else {
+        // Populate hints
+        let hintsHTML = '<div class="hints-header">💡 Hints:</div><ol class="hints-list">';
+        currentLevel.hints.forEach(hint => {
+            hintsHTML += `<li>${hint}</li>`;
+        });
+        hintsHTML += '</ol>';
+        hintsPanel.innerHTML = hintsHTML;
+        hintsPanel.style.display = 'block';
+        hintsToggleBtn.textContent = '💡 Hide Hints';
+    }
+}
+
+/**
+ * Complete current level and update progress
+ * @param {number} score - Final score
+ * @param {number} stars - Stars earned (1-3)
+ */
+function completeLevel(score, stars) {
+    if (gameMode !== 'level' || !currentLevel) return;
+    
+    const levelId = currentLevel.id;
+    const progress = levelProgress[levelId];
+    
+    // Update progress
+    progress.completed = true;
+    if (score > progress.bestScore) {
+        progress.bestScore = score;
+    }
+    if (stars > progress.stars) {
+        progress.stars = stars;
+    }
+    
+    // Unlock next level
+    const nextLevel = LEVELS.find(l => l.id === levelId + 1);
+    if (nextLevel && levelProgress[nextLevel.id]) {
+        levelProgress[nextLevel.id].unlocked = true;
+    }
+    
+    // Save progress
+    saveLevelProgress();
+}
+
 // Initialize the game
 function init() {
     canvas = document.getElementById('gameCanvas');
@@ -355,6 +765,9 @@ function init() {
     
     // Load sound preference from localStorage
     loadSoundPreference();
+    
+    // Load level progress from localStorage
+    loadLevelProgress();
     
     // Setup collision detection (only once)
     Events.on(engine, 'collisionStart', (event) => {
@@ -452,14 +865,20 @@ function init() {
     updateStatus('Ready to build! Select an object and click to place it.');
 }
 
-function createNPC() {
+function createNPC(customX = null, customY = null) {
     // Create NPC as a compound body (head + body)
-    // Position NPC standing on the ground
-    const npcX = CANVAS_WIDTH - 100;
-    // Calculate Y position so NPC stands on ground (ground top is at CANVAS_HEIGHT - GROUND_HEIGHT)
-    // Legs are positioned NPC_LEG_OFFSET pixels below body center
-    const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;
-    const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;
+    // Position NPC standing on the ground (or at custom position)
+    const npcX = customX !== null ? customX : CANVAS_WIDTH - 100;
+    
+    let npcY;
+    if (customY !== null) {
+        npcY = customY;
+    } else {
+        // Calculate Y position so NPC stands on ground (ground top is at CANVAS_HEIGHT - GROUND_HEIGHT)
+        // Legs are positioned NPC_LEG_OFFSET pixels below body center
+        const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;
+        npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;
+    }
     
     // Body
     const body = Bodies.rectangle(npcX, npcY, 30, 50, {
@@ -567,6 +986,7 @@ function setupEventListeners() {
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
     document.getElementById('gridToggleBtn').addEventListener('click', toggleGrid);
+    document.getElementById('levelsBtn').addEventListener('click', showLevelSelectionModal);
     
     // Save/Load buttons
     document.getElementById('saveBtn').addEventListener('click', () => {
@@ -933,14 +1353,16 @@ function updateUndoRedoButtons() {
     }
 }
 
-function placeObject(type, x, y) {
-    // Check if we've reached the maximum object limit
-    if (placedObjects.length >= MAX_OBJECTS) {
-        updateStatus(`Maximum object limit (${MAX_OBJECTS}) reached! Please remove some objects first.`);
-        alert(`Maximum object limit (${MAX_OBJECTS}) reached!\n\nFor optimal performance, please clear some objects before adding more.`);
-        return;
-    }
-    
+/**
+ * Internal function to place an object (used by both player placement and level loading)
+ * @param {string} type - Object type
+ * @param {number} x - X position
+ * @param {number} y - Y position
+ * @param {number} angle - Rotation angle (default 0)
+ * @param {boolean} isPreplaced - Whether this is a preplaced level object
+ * @returns {Matter.Body|null} The created body (or null for seesaw)
+ */
+function placeObjectInternal(type, x, y, angle = 0, isPreplaced = false) {
     let body;
     
     switch(type) {
@@ -977,7 +1399,7 @@ function placeObject(type, x, y) {
         case 'ramp':
             body = Bodies.rectangle(x, y, 120, 10, {
                 isStatic: true,
-                angle: currentRampAngle,
+                angle: angle !== 0 ? angle : currentRampAngle,
                 render: {
                     fillStyle: '#95E1D3'
                 }
@@ -995,34 +1417,34 @@ function placeObject(type, x, y) {
             
         case 'seesaw':
             // Create seesaw using helper function
-            // createSeesaw already adds pivot, plank, and constraint to the world
-            // and tracks them in placedObjects / placedConstraints.
             const { pivot, plank, constraint } = createSeesaw(x, y);
-            const seesawId = pivot.seesawId; // Get the generated ID
+            const seesawId = pivot.seesawId;
             
-            // Record action for undo/redo
-            recordAction({
-                type: 'place',
-                objectType: 'seesaw',
-                x: x,
-                y: y,
-                angle: 0,
-                seesawId: seesawId,
-                pivot: pivot,
-                plank: plank,
-                constraint: constraint
-            });
-            
-            updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
-            updateObjectCounter();
-            return;
+            // For preplaced objects, don't record undo action
+            if (!isPreplaced) {
+                recordAction({
+                    type: 'place',
+                    objectType: 'seesaw',
+                    x: x,
+                    y: y,
+                    angle: 0,
+                    seesawId: seesawId,
+                    pivot: pivot,
+                    plank: plank,
+                    constraint: constraint
+                });
+                updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
+                updateObjectCounter();
+                updateLevelInfoDisplay();
+            }
+            return pivot; // Return pivot as representative body
             
         case 'spring':
             body = Bodies.circle(x, y, 15, {
-                restitution: 1.5,  // Super bouncy - launches objects
-                density: 0.02,     // Light weight
+                restitution: 1.5,
+                density: 0.02,
                 render: {
-                    fillStyle: '#9B59B6'  // Purple color
+                    fillStyle: '#9B59B6'
                 }
             });
             break;
@@ -1031,15 +1453,20 @@ function placeObject(type, x, y) {
             body = Bodies.circle(x, y, 18, {
                 restitution: 0.3,
                 density: 0.06,
-                label: 'explosive',  // Label for explosion detection
+                label: 'explosive',
                 render: {
-                    fillStyle: '#E74C3C'  // Red color
+                    fillStyle: '#E74C3C'
                 }
             });
             break;
     }
     
     if (body) {
+        // Apply angle if specified
+        if (angle !== 0) {
+            Body.setAngle(body, angle);
+        }
+        
         // Store original position and angle for reset
         body.originalPosition = { x: body.position.x, y: body.position.y };
         body.originalAngle = body.angle;
@@ -1047,20 +1474,54 @@ function placeObject(type, x, y) {
         Composite.add(world, body);
         placedObjects.push(body);
         
-        // Record action for undo/redo
-        recordAction({
-            type: 'place',
-            objectType: type,
-            x: body.position.x,
-            y: body.position.y,
-            angle: body.angle,
-            body: body
-        });
+        // For player-placed objects (not preplaced), record action and update UI
+        if (!isPreplaced) {
+            recordAction({
+                type: 'place',
+                objectType: type,
+                x: body.position.x,
+                y: body.position.y,
+                angle: body.angle,
+                body: body
+            });
+            playSound('place');
+            updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
+            updateObjectCounter();
+            updateLevelInfoDisplay();
+        }
         
-        playSound('place'); // Play placement sound
-        updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
-        updateObjectCounter();
+        return body;
     }
+    
+    return null;
+}
+
+function placeObject(type, x, y) {
+    // In level mode, check object restrictions
+    if (gameMode === 'level' && currentLevel) {
+        // Count player-placed objects (exclude preplaced)
+        const playerObjectCount = placedObjects.length - preplacedLevelObjects.length;
+        
+        if (playerObjectCount >= currentLevel.maxObjects) {
+            updateStatus(`Maximum objects (${currentLevel.maxObjects}) for this level reached!`);
+            return;
+        }
+        
+        // Check if object type is allowed
+        if (currentLevel.allowedObjects.length > 0 && !currentLevel.allowedObjects.includes(type)) {
+            updateStatus(`${type} is not allowed in this level!`);
+            return;
+        }
+    } else {
+        // Sandbox mode - check global limit
+        if (placedObjects.length >= MAX_OBJECTS) {
+            updateStatus(`Maximum object limit (${MAX_OBJECTS}) reached! Please remove some objects first.`);
+            alert(`Maximum object limit (${MAX_OBJECTS}) reached!\n\nFor optimal performance, please clear some objects before adding more.`);
+            return;
+        }
+    }
+    
+    placeObjectInternal(type, x, y, 0, false);
 }
 
 function runMachine() {
@@ -1233,8 +1694,13 @@ function calculateAndDisplayScore() {
     }
     
     // Efficiency bonus (fewer objects = higher score)
+    // In level mode, count only player-placed objects
+    let objectCount = placedObjects.length;
+    if (gameMode === 'level' && preplacedLevelObjects.length > 0) {
+        objectCount = placedObjects.length - preplacedLevelObjects.length;
+    }
+    
     // Max bonus 500 for 1 object, decreases by 20 per object
-    const objectCount = placedObjects.length;
     const efficiencyBonus = Math.max(0, 500 - ((objectCount - 1) * 20));
     score += efficiencyBonus;
     breakdown.push({ label: `Efficiency (${objectCount} objects)`, points: efficiencyBonus });
@@ -1279,8 +1745,20 @@ function calculateAndDisplayScore() {
     
     // Calculate star rating
     let stars = 1;
-    if (score >= 2000) stars = 2;
-    if (score >= 2800) stars = 3;
+    if (gameMode === 'level' && currentLevel) {
+        // Use level-specific star thresholds
+        const thresholds = currentLevel.starThresholds;
+        if (score >= thresholds[2]) stars = 3;
+        else if (score >= thresholds[1]) stars = 2;
+        else if (score >= thresholds[0]) stars = 1;
+        
+        // Complete the level
+        completeLevel(score, stars);
+    } else {
+        // Sandbox mode - use default thresholds
+        if (score >= 2000) stars = 2;
+        if (score >= 2800) stars = 3;
+    }
     
     currentScore = score;
     currentStars = stars;
@@ -1299,24 +1777,23 @@ function showScoreModal(score, stars, breakdown) {
         modal.innerHTML = `
             <div class="score-modal-content">
                 <div class="score-header">
-                    <h2>Mission Complete!</h2>
+                    <h2 id="scoreModalTitle">Mission Complete!</h2>
                     <div class="score-stars" id="scoreStars"></div>
                 </div>
                 <div class="score-total" id="scoreTotal"></div>
                 <div class="score-breakdown" id="scoreBreakdown"></div>
-                <button id="closeScoreModal" class="action-btn">Continue Building</button>
+                <div id="scoreModalButtons"></div>
             </div>
         `;
         document.body.appendChild(modal);
-        
-        // Close modal handler
-        document.getElementById('closeScoreModal').addEventListener('click', () => {
-            modal.classList.remove('show');
-            // Wait for transition to complete before hiding
-            setTimeout(() => {
-                modal.style.display = 'none';
-            }, 300);
-        });
+    }
+    
+    // Update modal title based on mode
+    const titleElement = document.getElementById('scoreModalTitle');
+    if (gameMode === 'level' && currentLevel) {
+        titleElement.textContent = `Level ${currentLevel.id} Complete!`;
+    } else {
+        titleElement.textContent = 'Mission Complete!';
     }
     
     // Update modal content
@@ -1338,7 +1815,152 @@ function showScoreModal(score, stars, breakdown) {
     breakdownHTML += '</table>';
     breakdownContainer.innerHTML = breakdownHTML;
     
+    // Update buttons based on mode
+    const buttonsContainer = document.getElementById('scoreModalButtons');
+    if (gameMode === 'level' && currentLevel) {
+        const nextLevelExists = LEVELS.find(l => l.id === currentLevel.id + 1);
+        buttonsContainer.innerHTML = `
+            ${nextLevelExists ? '<button id="nextLevelBtn" class="action-btn">➡️ Next Level</button>' : ''}
+            <button id="retryLevelBtn" class="action-btn">🔄 Retry Level</button>
+            <button id="levelSelectBtn" class="action-btn">📋 Level Select</button>
+            <button id="closeScoreModal" class="action-btn">Continue Building</button>
+        `;
+        
+        // Attach event listeners
+        if (nextLevelExists) {
+            document.getElementById('nextLevelBtn')?.addEventListener('click', () => {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    loadLevel(currentLevel.id + 1);
+                }, 300);
+            });
+        }
+        
+        document.getElementById('retryLevelBtn')?.addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                loadLevel(currentLevel.id);
+            }, 300);
+        });
+        
+        document.getElementById('levelSelectBtn')?.addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                showLevelSelectionModal();
+            }, 300);
+        });
+    } else {
+        buttonsContainer.innerHTML = `
+            <button id="closeScoreModal" class="action-btn">Continue Building</button>
+        `;
+    }
+    
+    // Close modal handler (always present)
+    document.getElementById('closeScoreModal')?.addEventListener('click', () => {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300);
+    });
+    
     // Show modal with animation
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+}
+
+/**
+ * Show the level selection modal
+ */
+function showLevelSelectionModal() {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('levelModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'levelModal';
+        modal.className = 'level-modal';
+        modal.innerHTML = `
+            <div class="level-modal-content">
+                <div class="level-modal-header">
+                    <h2>Select Level</h2>
+                    <button id="closeLevelModal" class="close-btn">✖</button>
+                </div>
+                <div id="levelGrid" class="level-grid"></div>
+                <div class="level-modal-footer">
+                    <button id="sandboxModeBtn" class="action-btn">🎨 Sandbox Mode</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Close button handler
+        document.getElementById('closeLevelModal').addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        });
+        
+        // Sandbox mode button
+        document.getElementById('sandboxModeBtn').addEventListener('click', () => {
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                returnToSandbox();
+            }, 300);
+        });
+        
+        // Close on background click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('show');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300);
+            }
+        });
+    }
+    
+    // Populate level grid
+    const levelGrid = document.getElementById('levelGrid');
+    levelGrid.innerHTML = '';
+    
+    LEVELS.forEach(level => {
+        const progress = levelProgress[level.id];
+        const isLocked = !progress.unlocked;
+        
+        const levelCard = document.createElement('div');
+        levelCard.className = `level-card ${isLocked ? 'locked' : ''} ${progress.completed ? 'completed' : ''}`;
+        
+        if (isLocked) {
+            levelCard.innerHTML = `
+                <div class="level-number">🔒</div>
+                <div class="level-name">Level ${level.id}</div>
+                <div class="level-stars">Locked</div>
+            `;
+        } else {
+            const starsHTML = '⭐'.repeat(progress.stars) + '☆'.repeat(3 - progress.stars);
+            levelCard.innerHTML = `
+                <div class="level-number">${level.id}</div>
+                <div class="level-name">${level.name}</div>
+                <div class="level-desc">${level.description}</div>
+                <div class="level-stars">${starsHTML}</div>
+                ${progress.bestScore > 0 ? `<div class="level-best-score">Best: ${progress.bestScore}</div>` : ''}
+            `;
+            
+            levelCard.addEventListener('click', () => {
+                loadLevel(level.id);
+            });
+        }
+        
+        levelGrid.appendChild(levelCard);
+    });
+    
+    // Show modal
     modal.style.display = 'flex';
     setTimeout(() => {
         modal.classList.add('show');
@@ -1354,9 +1976,13 @@ function resetMachine() {
         Runner.stop(runner);
     }
     
-    // Remove NPC and recreate it
+    // Remove NPC and recreate it at appropriate position
     Composite.remove(world, npc);
-    createNPC();
+    if (gameMode === 'level' && currentLevel) {
+        createNPC(currentLevel.npcPosition.x, currentLevel.npcPosition.y);
+    } else {
+        createNPC();
+    }
     
     // Reset all dynamic bodies to their original positions
     placedObjects.forEach(obj => {
@@ -1401,15 +2027,41 @@ function resetMachine() {
 
 function clearAll() {
     playSound('ui'); // Play UI sound for clear action
-    // Remove all placed objects
-    placedObjects.forEach(obj => {
-        Composite.remove(world, obj);
-    });
-    placedConstraints.forEach(constraint => {
-        Composite.remove(world, constraint);
-    });
-    placedObjects = [];
-    placedConstraints = [];
+    
+    // In level mode, only remove player-placed objects, keep preplaced ones
+    if (gameMode === 'level' && preplacedLevelObjects.length > 0) {
+        // Remove only objects that aren't preplaced
+        placedObjects.forEach(obj => {
+            if (!preplacedLevelObjects.includes(obj)) {
+                Composite.remove(world, obj);
+            }
+        });
+        placedConstraints.forEach(constraint => {
+            // Check if this constraint belongs to a preplaced seesaw
+            const isPreplaced = preplacedLevelObjects.some(obj => 
+                obj.seesawId && obj.seesawId === constraint.seesawId
+            );
+            if (!isPreplaced) {
+                Composite.remove(world, constraint);
+            }
+        });
+        
+        // Keep only preplaced objects
+        placedObjects = [...preplacedLevelObjects];
+        placedConstraints = placedConstraints.filter(c => 
+            preplacedLevelObjects.some(obj => obj.seesawId && obj.seesawId === c.seesawId)
+        );
+    } else {
+        // Sandbox mode - remove everything
+        placedObjects.forEach(obj => {
+            Composite.remove(world, obj);
+        });
+        placedConstraints.forEach(constraint => {
+            Composite.remove(world, constraint);
+        });
+        placedObjects = [];
+        placedConstraints = [];
+    }
     
     // Clear undo/redo history
     actionHistory = [];
@@ -1426,8 +2078,9 @@ function clearAll() {
         resetMachine();
     }
     
-    updateStatus('All objects cleared! Start building your machine.');
+    updateStatus('Cleared! Start building your machine.');
     updateObjectCounter();
+    updateLevelInfoDisplay();
 }
 
 function updateStatus(message) {
