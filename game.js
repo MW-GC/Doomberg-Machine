@@ -27,6 +27,11 @@ const POSITION_ITERATIONS = 10; // Increased from default 6 to reduce tunneling
 const VELOCITY_ITERATIONS = 6;  // Increased from default 4 to reduce tunneling
 const DOOM_VELOCITY_THRESHOLD = 2; // Minimum velocity to doom NPC
 const MAX_OBJECTS = 100; // Maximum number of objects allowed for performance
+const MAX_SAVE_NAME_LENGTH = 30; // Maximum characters for save design names
+
+// Object type detection thresholds (used in getObjectType for serialization)
+const PLATFORM_MIN_WIDTH = 140; // Platforms are wider than ramps (150 vs 120)
+const DOMINO_MIN_HEIGHT = 50; // Dominoes are taller than boxes (60 vs 40)
 
 /**
  * Normalize an angle in radians to the range [0, 2π).
@@ -74,6 +79,38 @@ let objectTypesUsed = new Set();
 let currentScore = 0;
 let currentStars = 0;
 
+/**
+ * Apply explosion force to all nearby objects from an explosion center
+ * @param {number} explosionX - X coordinate of explosion center
+ * @param {number} explosionY - Y coordinate of explosion center
+ * @param {number} explosionRadius - Radius of explosion effect (default 150)
+ * @param {number} explosionForce - Force magnitude (default 0.08)
+ * @param {Matter.Body|null} explosiveBody - The body representing the explosive itself, which will be excluded from the explosion force
+ */
+function applyExplosionForce(explosionX, explosionY, explosionRadius = 150, explosionForce = 0.08, explosiveBody = null) {
+    // Get all bodies in the explosion radius
+    const allBodies = Composite.allBodies(world);
+    
+    allBodies.forEach(body => {
+        // Skip static bodies and the explosive itself
+        if (body.isStatic || body === explosiveBody) return;
+        
+        const dx = body.position.x - explosionX;
+        const dy = body.position.y - explosionY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        // Apply force if within radius
+        if (distance < explosionRadius && distance > 0) {
+            // Calculate force direction (normalized)
+            const forceMagnitude = explosionForce * (1 - distance / explosionRadius);
+            const forceX = (dx / distance) * forceMagnitude;
+            const forceY = (dy / distance) * forceMagnitude;
+            
+            // Apply the force at the body's position
+            Body.applyForce(body, body.position, { x: forceX, y: forceY });
+        }
+    });
+}
 
 
 // Initialize the game
@@ -144,6 +181,41 @@ function init() {
                 collisionCount++;
             }
             
+            // Check for explosive collision
+            const explosiveBody = pair.bodyA.label === 'explosive' ? pair.bodyA : 
+                                  (pair.bodyB.label === 'explosive' ? pair.bodyB : null);
+            
+            if (explosiveBody && isRunning && !explosiveBody.hasDetonated) {
+                // Get the other body in the collision
+                const otherBody = pair.bodyA === explosiveBody ? pair.bodyB : pair.bodyA;
+                
+                // Calculate relative velocity between the two bodies
+                const relativeVelocity = Math.sqrt(
+                    Math.pow(explosiveBody.velocity.x - otherBody.velocity.x, 2) +
+                    Math.pow(explosiveBody.velocity.y - otherBody.velocity.y, 2)
+                );
+                
+                // Detonate on significant impact based on relative velocity
+                if (relativeVelocity > 1) {
+                    // Mark as detonated immediately to prevent multiple detonations
+                    explosiveBody.hasDetonated = true;
+                    
+                    // Apply explosion force to nearby objects (excluding the explosive itself)
+                    applyExplosionForce(explosiveBody.position.x, explosiveBody.position.y, 150, 0.08, explosiveBody);
+                    
+                    // Change color to indicate explosion (visual feedback)
+                    explosiveBody.render.fillStyle = '#FFA500';  // Orange explosion color
+                    
+                    // Remove explosive immediately
+                    Composite.remove(world, explosiveBody);
+                    placedObjects = placedObjects.filter(obj => obj !== explosiveBody);
+                    updateObjectCounter();
+                    
+                    updateStatus('💥 EXPLOSION!');
+                }
+            }
+            
+            // Check for NPC doom
             if ((pair.bodyA.label === 'npc' || pair.bodyB.label === 'npc') && !npcDoomed) {
                 // Check if collision is significant based on the other body's velocity
                 const otherBody = pair.bodyA.label === 'npc' ? pair.bodyB : pair.bodyA;
@@ -275,6 +347,33 @@ function setupEventListeners() {
     document.getElementById('redoBtn').addEventListener('click', redo);
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
+    
+    // Save/Load buttons
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        const name = document.getElementById('saveName').value;
+        saveContraption(name);
+    });
+    
+    document.getElementById('loadBtn').addEventListener('click', () => {
+        const name = document.getElementById('savedList').value;
+        loadContraption(name);
+    });
+    
+    document.getElementById('deleteBtn').addEventListener('click', () => {
+        const name = document.getElementById('savedList').value;
+        deleteContraption(name);
+    });
+    
+    // Allow Enter key in save name input
+    document.getElementById('saveName').addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+            const name = document.getElementById('saveName').value;
+            saveContraption(name);
+        }
+    });
+    
+    // Refresh saved list on page load
+    refreshSavedList();
     
     // Keyboard controls for rotating ramps and undo/redo
     document.addEventListener('keydown', (event) => {
@@ -459,6 +558,8 @@ function revertAction(action) {
             removeSeesaw(action.seesawId);
         } else {
             // Remove single object
+            // Note: If object was removed during runtime (e.g., explosive detonation),
+            // this check will fail gracefully and skip removal
             const body = action.body;
             if (body && placedObjects.includes(body)) {
                 Composite.remove(world, body);
@@ -563,6 +664,21 @@ function recreateBody(type, x, y, angle) {
             body = Bodies.rectangle(x, y, 150, 10, {
                 isStatic: true,
                 render: { fillStyle: '#F38181' }
+            });
+            break;
+        case 'spring':
+            body = Bodies.circle(x, y, 15, {
+                restitution: 1.5,
+                density: 0.02,
+                render: { fillStyle: '#9B59B6' }
+            });
+            break;
+        case 'explosive':
+            body = Bodies.circle(x, y, 18, {
+                restitution: 0.3,
+                density: 0.06,
+                label: 'explosive',
+                render: { fillStyle: '#E74C3C' }
             });
             break;
     }
@@ -672,6 +788,27 @@ function placeObject(type, x, y) {
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
             updateObjectCounter();
             return;
+            
+        case 'spring':
+            body = Bodies.circle(x, y, 15, {
+                restitution: 1.5,  // Super bouncy - launches objects
+                density: 0.02,     // Light weight
+                render: {
+                    fillStyle: '#9B59B6'  // Purple color
+                }
+            });
+            break;
+            
+        case 'explosive':
+            body = Bodies.circle(x, y, 18, {
+                restitution: 0.3,
+                density: 0.06,
+                label: 'explosive',  // Label for explosion detection
+                render: {
+                    fillStyle: '#E74C3C'  // Red color
+                }
+            });
+            break;
     }
     
     if (body) {
@@ -1114,6 +1251,279 @@ function deleteObject(body) {
     
     // Update the object counter after deletion
     updateObjectCounter();
+}
+
+/**
+ * Helper function to determine object type from a body
+ * @param {Body} body - The Matter.js body
+ * @returns {string} - The object type string
+ */
+function getObjectType(body) {
+    // Check for seesaw parts
+    if (body.label === LABEL_SEESAW_PIVOT || body.label === LABEL_SEESAW_PLANK) {
+        return 'seesaw';
+    }
+    
+    // Check for ball (has circleRadius)
+    if (body.circleRadius) {
+        return 'ball';
+    }
+    
+    // Check for static objects
+    if (body.isStatic) {
+        const width = body.bounds.max.x - body.bounds.min.x;
+        // Platform is wider than ramp (150 vs 120)
+        return width > PLATFORM_MIN_WIDTH ? 'platform' : 'ramp';
+    }
+    
+    // Check dynamic objects by height
+    const height = body.bounds.max.y - body.bounds.min.y;
+    // Domino is taller than box (60 vs 40)
+    return height > DOMINO_MIN_HEIGHT ? 'domino' : 'box';
+}
+
+/**
+ * Save current contraption design to localStorage
+ * @param {string} name - Name for the saved design
+ */
+function saveContraption(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please enter a name for your design');
+        alert('Please enter a name for your design!');
+        return;
+    }
+    
+    name = name.trim();
+    
+    // Enforce max length constraint (same as HTML input maxlength="30")
+    if (name.length > MAX_SAVE_NAME_LENGTH) {
+        updateStatus(`Design name too long (max ${MAX_SAVE_NAME_LENGTH} characters)`);
+        alert(`Design name must be ${MAX_SAVE_NAME_LENGTH} characters or less!`);
+        return;
+    }
+    
+    // Collect all unique objects (avoid duplicating seesaw parts)
+    const processedSeesaws = new Set();
+    const objectsData = [];
+    
+    placedObjects.forEach(obj => {
+        // Handle seesaws specially
+        if ((obj.label === LABEL_SEESAW_PIVOT || obj.label === LABEL_SEESAW_PLANK) && obj.seesawId !== undefined) {
+            // Only save seesaw once using pivot
+            if (obj.label === LABEL_SEESAW_PIVOT && !processedSeesaws.has(obj.seesawId)) {
+                processedSeesaws.add(obj.seesawId);
+                objectsData.push({
+                    type: 'seesaw',
+                    x: obj.position.x,
+                    y: obj.position.y,
+                    angle: 0,
+                    seesawId: obj.seesawId
+                });
+            }
+        } else {
+            // Regular object
+            objectsData.push({
+                type: getObjectType(obj),
+                x: obj.position.x,
+                y: obj.position.y,
+                angle: obj.angle
+            });
+        }
+    });
+    
+    const design = {
+        version: 1,
+        timestamp: Date.now(),
+        name: name,
+        objects: objectsData
+    };
+    
+    try {
+        localStorage.setItem(`doomberg_${name}`, JSON.stringify(design));
+        updateStatus(`Saved: ${name}`);
+        refreshSavedList();
+        document.getElementById('saveName').value = '';
+    } catch (e) {
+        updateStatus('Failed to save: Storage limit exceeded');
+        alert('Failed to save: Your browser storage is full. Please delete some saved designs.');
+        console.error('Save error:', e);
+    }
+}
+
+/**
+ * Load a contraption design from localStorage
+ * @param {string} name - Name of the saved design to load
+ */
+function loadContraption(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please select a design to load');
+        return;
+    }
+    
+    name = name.trim();
+    
+    try {
+        const data = localStorage.getItem(`doomberg_${name}`);
+        if (!data) {
+            updateStatus(`Design not found: ${name}`);
+            alert(`Design not found: ${name}`);
+            return;
+        }
+        
+        const design = JSON.parse(data);
+        
+        // Verify version - using strict equality for conservative compatibility
+        // Only version 1 is currently supported. Future versions should implement
+        // backward compatibility logic here if needed (e.g., design.version <= MAX_SUPPORTED_VERSION)
+        if (design.version !== 1) {
+            updateStatus('Incompatible design version');
+            alert('This design was saved with an incompatible version.');
+            return;
+        }
+        
+        // Clear existing objects
+        clearAll();
+        
+        // Track maximum seesawId to prevent ID collisions
+        let maxSeesawId = -1;
+        
+        // Recreate objects
+        design.objects.forEach(objData => {
+            if (objData.type === 'seesaw') {
+                // For seesaws, use the saved seesawId to maintain consistency
+                const seesawId = objData.seesawId !== undefined ? objData.seesawId : seesawIdCounter++;
+                createSeesaw(objData.x, objData.y, seesawId);
+                
+                // Track max ID
+                if (seesawId > maxSeesawId) {
+                    maxSeesawId = seesawId;
+                }
+                
+                // Record action for undo/redo
+                const pivot = placedObjects.find(obj => obj.label === LABEL_SEESAW_PIVOT && obj.seesawId === seesawId);
+                const plank = placedObjects.find(obj => obj.label === LABEL_SEESAW_PLANK && obj.seesawId === seesawId);
+                const constraint = placedConstraints.find(c => c.seesawId === seesawId);
+                
+                if (pivot && plank && constraint) {
+                    recordAction({
+                        type: 'place',
+                        objectType: 'seesaw',
+                        x: objData.x,
+                        y: objData.y,
+                        angle: 0,
+                        seesawId: seesawId,
+                        pivot: pivot,
+                        plank: plank,
+                        constraint: constraint
+                    });
+                }
+            } else {
+                // Regular objects
+                placeObject(objData.type, objData.x, objData.y);
+                
+                // For ramps, restore the angle
+                if (objData.type === 'ramp' && objData.angle !== undefined) {
+                    const lastObject = placedObjects[placedObjects.length - 1];
+                    if (lastObject && !lastObject.label) {
+                        Body.setAngle(lastObject, objData.angle);
+                        lastObject.originalAngle = objData.angle;
+                    }
+                }
+            }
+        });
+        
+        // Update seesawIdCounter to prevent ID collisions with newly created seesaws
+        if (maxSeesawId >= 0) {
+            seesawIdCounter = Math.max(seesawIdCounter, maxSeesawId + 1);
+        }
+        
+        updateStatus(`Loaded: ${name} (${design.objects.length} objects)`);
+        updateObjectCounter();
+    } catch (e) {
+        updateStatus('Failed to load design');
+        alert('Failed to load design: The data may be corrupted.');
+        console.error('Load error:', e);
+    }
+}
+
+/**
+ * Get list of all saved contraption names
+ * @returns {Array<string>} Array of saved design names
+ */
+function listSavedContraptions() {
+    const keys = Object.keys(localStorage);
+    return keys
+        .filter(k => k.startsWith('doomberg_'))
+        .map(k => k.replace('doomberg_', ''))
+        .sort();
+}
+
+/**
+ * Delete a saved contraption from localStorage
+ * @param {string} name - Name of the design to delete
+ */
+function deleteContraption(name) {
+    if (!name || name.trim() === '') {
+        updateStatus('Please select a design to delete');
+        return;
+    }
+    
+    name = name.trim();
+    
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+        return;
+    }
+    
+    const storageKey = `doomberg_${name}`;
+    
+    try {
+        // Check if localStorage is available and whether the item exists
+        const existingValue = localStorage.getItem(storageKey);
+        
+        if (existingValue === null) {
+            updateStatus(`Design not found: ${name}`);
+            refreshSavedList();
+            document.getElementById('savedList').value = '';
+            return;
+        }
+        
+        // Remove the item
+        localStorage.removeItem(storageKey);
+        
+        // Verify removal succeeded
+        const stillExists = localStorage.getItem(storageKey) !== null;
+        if (stillExists) {
+            updateStatus('Failed to delete design');
+            console.error('Delete error: item still present after removeItem');
+            return;
+        }
+        
+        updateStatus(`Deleted: ${name}`);
+        refreshSavedList();
+        document.getElementById('savedList').value = '';
+    } catch (e) {
+        updateStatus('Saving is not available in this browser');
+        console.error('localStorage access error:', e);
+    }
+}
+
+/**
+ * Refresh the saved designs dropdown list
+ */
+function refreshSavedList() {
+    const savedList = document.getElementById('savedList');
+    const savedNames = listSavedContraptions();
+    
+    // Clear current options except the first one
+    savedList.innerHTML = '<option value="">-- Select saved design --</option>';
+    
+    // Add saved designs
+    savedNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        savedList.appendChild(option);
+    });
 }
 
 // Initialize game when page loads

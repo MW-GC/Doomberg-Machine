@@ -52,6 +52,21 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 - **Best For**: Weight-based triggers, launching objects
 - **Tip**: Drop a heavy object on one side to catapult lighter objects on the other side
 
+### 🌀 Spring
+- **Type**: Dynamic object
+- **Physics**: Super bouncy, lightweight
+- **Best For**: Launching objects at high speed, creating unexpected trajectories
+- **Special Feature**: Restitution of 1.5 (higher than normal) creates explosive bounce effects
+- **Tip**: Place springs strategically to redirect falling objects with extreme velocity
+
+### 💣 Explosive
+- **Type**: Dynamic object (single-use)
+- **Physics**: Moderate weight, detonates on impact
+- **Best For**: Creating explosive force fields, launching multiple objects simultaneously
+- **Special Feature**: Detonates when hit by a fast-moving object (velocity > 1), applies radial force to all nearby objects within 150px
+- **Visual Feedback**: Changes from red to orange when exploding, then disappears
+- **Tip**: Place near the NPC or use to trigger chain reactions with multiple objects
+
 ## 🕹️ How to Play
 
 ### Getting Started
@@ -169,6 +184,31 @@ To get 3 stars, focus on:
 - Efficient use of objects (fewer is better for efficiency, but variety helps too)
 - Creating chain reactions for combo multipliers
 
+## 💾 Save/Load System
+
+The game includes a complete save/load system that stores your contraptions in your browser's localStorage:
+
+### Features
+- **Persistent Storage**: Designs are saved even after closing the browser
+- **Named Saves**: Give each design a descriptive name (up to 30 characters)
+- **Automatic List**: All saved designs appear in the dropdown menu
+- **Complex Objects**: Properly saves and restores seesaws, ramps with rotation, and all object types
+- **Quick Access**: Quickly switch between different machine designs
+- **Multiple Saves**: Save as many different contraptions as you want
+
+### Use Cases
+- **Iterate on Designs**: Save work-in-progress and come back later
+- **Share Locations**: Note down a design name to tell friends which contraption to try
+- **Competition**: Save your record-breaking minimalist solutions
+- **Collections**: Build a library of your favorite machines
+- **Learning**: Save examples of different physics techniques
+
+### Tips
+- Use descriptive names like "3-Ball Cascade" or "Seesaw Launch v2"
+- Regularly save your work before making big changes
+- Delete old designs you no longer need to keep the list manageable
+- Designs include exact positions and angles of all objects
+
 ## 💡 Strategy Tips
 
 ### For Beginners
@@ -183,6 +223,9 @@ To get 3 stars, focus on:
 - **Domino Triggers**: Use dominoes to trigger delayed reactions
 - **Ramp Combinations**: Stack multiple angled ramps to create complex trajectories
 - **Platform Staging**: Build multi-level contraptions with platforms at different heights
+- **Spring Combos**: Bounce objects through multiple springs for extreme velocity
+- **Explosive Chains**: Place explosives near each other to create cascading explosions
+- **Spring-Explosive Combo**: Launch an object with a spring to detonate an explosive with high velocity
 
 ### Creative Challenges
 - 🏆 **Minimalist**: Doom the NPC with the fewest objects possible (maximize efficiency bonus!)
@@ -207,6 +250,11 @@ To get 3 stars, focus on:
 | Slow Motion Toggle | Click "🐌 Slow-Mo" |
 | Reset Positions | Click "🔄 Reset" |
 | Clear All | Click "🗑️ Clear All" |
+| Undo | `Ctrl+Z` or Click "↶ Undo" |
+| Redo | `Ctrl+Y` or `Ctrl+Shift+Z` or Click "↷ Redo" |
+| Save Design | Type name and click "💾 Save" or press `Enter` |
+| Load Design | Select from dropdown and click "📂 Load" |
+| Delete Saved Design | Select from dropdown and click "🗑️ Delete" |
 
 ## ❓ Frequently Asked Questions
 
@@ -224,6 +272,18 @@ A: When you have the ramp tool selected, press Q or E to rotate, and the current
 
 **Q: Can objects go off-screen?**  
 A: No - the game has invisible walls on the left and right sides to keep everything in play.
+
+**Q: Where are my saved designs stored?**  
+A: Designs are stored in your browser's localStorage. They persist across sessions but are specific to your browser on this device. Clearing browser data will delete saved designs.
+
+**Q: Can I share my contraptions with others?**  
+A: Currently, designs are saved locally. You can tell others the name of your save and describe the machine, but there's no export/import feature yet (planned for future updates).
+
+**Q: Is there a limit to how many designs I can save?**  
+A: Browser localStorage typically allows 5-10MB. Each contraption is small (a few KB), so you can save hundreds of designs before running into limits.
+
+**Q: What happens if I save with the same name twice?**  
+A: The new save will overwrite the old one. Use unique names or add version numbers (e.g., "Machine v1", "Machine v2") to keep multiple iterations.
 
 **Q: How do I use pause and slow-motion?**  
 A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.
@@ -258,7 +318,7 @@ Have an amazing contraption you'd like to share? Consider:
 
 Keep an eye on the repository for potential future features:
 - Level system with increasing difficulty
-- More object types (springs, explosives, fans)
+- More object types (fans, magnets, portals)
 - Save/load contraption designs
 - Leaderboards and scoring system
 - Multiplayer contraption challenges
