@@ -66,7 +66,97 @@ let seesawIdCounter = 0; // Counter for unique seesaw IDs
 let actionHistory = [];
 let historyIndex = -1;
 
+// Sound system
+let soundEnabled = true;
+const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
+/**
+ * Play a simple sound effect using Web Audio API
+ * @param {string} type - Type of sound: 'place', 'collision', 'doom', 'ui'
+ */
+function playSound(type) {
+    if (!soundEnabled) return;
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Configure sound based on type
+    switch(type) {
+        case 'place':
+            // Object placement - short pop
+            oscillator.frequency.value = 400;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+            break;
+            
+        case 'collision':
+            // Collision - quick thud
+            oscillator.frequency.value = 100;
+            oscillator.type = 'square';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+            break;
+            
+        case 'doom':
+            // Doom - dramatic descending tone
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(100, audioContext.currentTime + 0.5);
+            oscillator.type = 'sawtooth';
+            gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+            break;
+            
+        case 'ui':
+            // UI action - subtle click
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.08);
+            break;
+    }
+}
+
+/**
+ * Toggle sound on/off and save preference
+ */
+function toggleSound() {
+    soundEnabled = !soundEnabled;
+    localStorage.setItem('doomberg_sound_enabled', soundEnabled);
+    updateSoundButton();
+}
+
+/**
+ * Update sound button text
+ */
+function updateSoundButton() {
+    const soundBtn = document.getElementById('soundBtn');
+    if (soundBtn) {
+        soundBtn.textContent = soundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+    }
+}
+
+/**
+ * Load sound preference from localStorage
+ */
+function loadSoundPreference() {
+    const saved = localStorage.getItem('doomberg_sound_enabled');
+    if (saved !== null) {
+        soundEnabled = saved === 'true';
+    }
+    updateSoundButton();
+}
 
 // Initialize the game
 function init() {
@@ -126,6 +216,9 @@ function init() {
     // Setup button listeners
     setupEventListeners();
     
+    // Load sound preference from localStorage
+    loadSoundPreference();
+    
     // Setup collision detection (only once)
     Events.on(engine, 'collisionStart', (event) => {
         const pairs = event.pairs;
@@ -138,6 +231,7 @@ function init() {
                 
                 if (velocity > DOOM_VELOCITY_THRESHOLD) {
                     npcDoomed = true;
+                    playSound('collision'); // Play collision sound
                     doomNPC();
                 }
             }
@@ -262,6 +356,15 @@ function setupEventListeners() {
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
     
+    // Sound button
+    const soundBtn = document.getElementById('soundBtn');
+    if (soundBtn) {
+        soundBtn.addEventListener('click', () => {
+            toggleSound();
+            playSound('ui');
+        });
+    }
+    
     // Keyboard controls for rotating ramps and undo/redo
     document.addEventListener('keydown', (event) => {
         // Undo/Redo shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z)
@@ -337,6 +440,7 @@ function undo() {
         return;
     }
     
+    playSound('ui'); // Play UI sound for undo action
     const action = actionHistory[historyIndex];
     revertAction(action);
     historyIndex--;
@@ -352,6 +456,7 @@ function redo() {
         return;
     }
     
+    playSound('ui'); // Play UI sound for redo action
     historyIndex++;
     const action = actionHistory[historyIndex];
     applyAction(action);
@@ -675,6 +780,7 @@ function placeObject(type, x, y) {
             body: body
         });
         
+        playSound('place'); // Play placement sound
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
         updateObjectCounter();
     }
@@ -683,6 +789,7 @@ function placeObject(type, x, y) {
 function runMachine() {
     if (isRunning) return;
     
+    playSound('ui'); // Play UI sound for run action
     isRunning = true;
     isPaused = false;
     isSlowMotion = false;
@@ -795,6 +902,7 @@ function updateSlowMotionButtonText() {
 }
 
 function doomNPC() {
+    playSound('doom'); // Play doom sound
     const doomStatus = document.getElementById('doomStatus');
     doomStatus.textContent = 'NPC Status: DOOMED! 💀☠️';
     doomStatus.classList.add('doomed');
@@ -812,6 +920,7 @@ function doomNPC() {
 function resetMachine() {
     if (!isRunning) return;
     
+    playSound('ui'); // Play UI sound for reset action
     // Stop the runner
     if (runner) {
         Runner.stop(runner);
@@ -863,6 +972,7 @@ function resetMachine() {
 }
 
 function clearAll() {
+    playSound('ui'); // Play UI sound for clear action
     // Remove all placed objects
     placedObjects.forEach(obj => {
         Composite.remove(world, obj);
