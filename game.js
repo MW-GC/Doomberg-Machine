@@ -17,6 +17,7 @@ const GROUND_HEIGHT = 20;
 const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
 const MAX_HISTORY_SIZE = 50; // Maximum undo/redo history entries to prevent memory leaks
+const GRID_SIZE = 40; // Grid cell size in pixels
 
 // Object labels
 const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
@@ -42,6 +43,49 @@ function normalizeAngle(angle) {
     return result;
 }
 
+/**
+ * Snap coordinates to the nearest grid intersection.
+ * @param {number} x
+ * @param {number} y
+ * @returns {{x: number, y: number}}
+ */
+function snapToGrid(x, y) {
+    if (!isGridEnabled) {
+        return { x, y };
+    }
+    return {
+        x: Math.round(x / GRID_SIZE) * GRID_SIZE,
+        y: Math.round(y / GRID_SIZE) * GRID_SIZE
+    };
+}
+
+/**
+ * Draw grid overlay on canvas.
+ * @param {CanvasRenderingContext2D} context
+ */
+function drawGrid(context) {
+    if (!isGridEnabled) return;
+    
+    context.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    context.lineWidth = 1;
+    
+    // Draw vertical lines
+    for (let x = 0; x <= CANVAS_WIDTH; x += GRID_SIZE) {
+        context.beginPath();
+        context.moveTo(x, 0);
+        context.lineTo(x, CANVAS_HEIGHT);
+        context.stroke();
+    }
+    
+    // Draw horizontal lines
+    for (let y = 0; y <= CANVAS_HEIGHT; y += GRID_SIZE) {
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(CANVAS_WIDTH, y);
+        context.stroke();
+    }
+}
+
 const DEFAULT_RAMP_ANGLE = normalizeAngle(-17 * Math.PI / 180); // -17 degrees, normalized to [0, 2π)
 const ROTATION_INCREMENT = Math.PI / 12; // 15 degrees per key press
 
@@ -55,6 +99,7 @@ let selectedTool = null;
 let isRunning = false;
 let isPaused = false;
 let isSlowMotion = false;
+let isGridEnabled = false; // Grid toggle state
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
@@ -144,6 +189,11 @@ function init() {
         });
     });
     
+    // Draw grid overlay after each render
+    Events.on(render, 'afterRender', () => {
+        drawGrid(render.context);
+    });
+    
     // Start render after all bodies are created; runner will be started in runMachine()
     Render.run(render);
     
@@ -215,8 +265,13 @@ function setupMouseControl() {
         const rect = canvas.getBoundingClientRect();
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        const x = (event.clientX - rect.left) * scaleX;
-        const y = (event.clientY - rect.top) * scaleY;
+        let x = (event.clientX - rect.left) * scaleX;
+        let y = (event.clientY - rect.top) * scaleY;
+        
+        // Apply snap-to-grid if enabled
+        const snapped = snapToGrid(x, y);
+        x = snapped.x;
+        y = snapped.y;
         
         placeObject(selectedTool, x, y);
     });
@@ -261,6 +316,7 @@ function setupEventListeners() {
     document.getElementById('redoBtn').addEventListener('click', redo);
     document.getElementById('pauseBtn').addEventListener('click', togglePause);
     document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
+    document.getElementById('gridToggleBtn').addEventListener('click', toggleGrid);
     
     // Keyboard controls for rotating ramps and undo/redo
     document.addEventListener('keydown', (event) => {
@@ -791,6 +847,22 @@ function updateSlowMotionButtonText() {
         slowMotionBtn.textContent = '🐌 Slow-Mo: ON';
     } else {
         slowMotionBtn.textContent = '🐌 Slow-Mo';
+    }
+}
+
+function toggleGrid() {
+    isGridEnabled = !isGridEnabled;
+    
+    // Update button UI
+    const gridToggleBtn = document.getElementById('gridToggleBtn');
+    if (isGridEnabled) {
+        gridToggleBtn.classList.add('active');
+        gridToggleBtn.textContent = '⊞ Grid: ON';
+        updateStatus(`Grid enabled. Objects will snap to ${GRID_SIZE}px grid.`);
+    } else {
+        gridToggleBtn.classList.remove('active');
+        gridToggleBtn.textContent = '⊞ Grid: OFF';
+        updateStatus('Grid disabled. Free placement enabled.');
     }
 }
 
