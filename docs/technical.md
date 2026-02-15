@@ -272,9 +272,9 @@ The NPC is positioned to stand on the ground from initialization to prevent phys
 - **Positioning calculation**: 
   ```javascript
   const groundTop = CANVAS_HEIGHT - GROUND_HEIGHT;  // 580
-  const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;  // 545
+  const npcY = groundTop - NPC_LEG_OFFSET - NPC_HALF_LEG_HEIGHT;  // 535
   ```
-- This ensures NPC feet are placed at ground level (y=575) when created, preventing the NPC from falling through the ground when made dynamic
+- This ensures NPC feet are placed at ground level (y=580) when created, preventing the NPC from falling through the ground when made dynamic
 
 ### Constraints
 
