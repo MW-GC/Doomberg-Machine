@@ -355,6 +355,21 @@ Removes all placed objects from the world.
 - **Returns**: void
 - **Side Effects**: Empties tracking arrays, calls reset if running
 
+#### `deleteObjectAtPosition(x, y)`
+Finds and deletes the object at the specified canvas position.
+- **Parameters**: 
+  - `x` (number): Canvas x-coordinate
+  - `y` (number): Canvas y-coordinate
+- **Returns**: void
+- **Side Effects**: Calls `deleteObject()` if body found
+
+#### `deleteObject(body)`
+Removes a body from the world, handling compound objects (seesaws).
+- **Parameters**: `body` (Body): Matter.js body to delete
+- **Returns**: void
+- **Side Effects**: Removes body and related constraints, updates arrays and status
+- **Notes**: For seesaws, removes both pivot and plank using `seesawId`
+
 #### `doomNPC()`
 Triggers the victory condition when NPC is hit.
 - **Preconditions**: `!npcDoomed`

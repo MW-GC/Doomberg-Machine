@@ -7,7 +7,8 @@ const Engine = Matter.Engine,
       Events = Matter.Events,
       Mouse = Matter.Mouse,
       MouseConstraint = Matter.MouseConstraint,
-      Body = Matter.Body;
+      Body = Matter.Body,
+      Query = Matter.Query;
 
 // Game constants
 const CANVAS_WIDTH = 1200;
@@ -15,6 +16,10 @@ const CANVAS_HEIGHT = 600;
 const GROUND_HEIGHT = 20;
 const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
+
+// Object labels
+const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
+const LABEL_SEESAW_PLANK = 'seesaw-plank';
 
 /**
  * Normalize an angle in radians to the range [0, 2π).
@@ -46,6 +51,7 @@ let npcDoomed = false;
 let placedObjects = [];
 let placedConstraints = [];
 let currentRampAngle = DEFAULT_RAMP_ANGLE;
+let seesawIdCounter = 0; // Counter for unique seesaw IDs
 
 // Initialize the game
 function init() {
@@ -195,6 +201,21 @@ function setupMouseControl() {
         
         placeObject(selectedTool, x, y);
     });
+    
+    // Right-click to delete objects
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        
+        if (isRunning) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
+        
+        deleteObjectAtPosition(x, y);
+    });
 }
 
 function setupEventListeners() {
@@ -299,16 +320,23 @@ function placeObject(type, x, y) {
             // Create seesaw as two bodies - the pivot and the plank
             const pivot = Bodies.rectangle(x, y, 10, 40, {
                 isStatic: true,
+                label: LABEL_SEESAW_PIVOT,
                 render: {
                     fillStyle: '#AA8976'
                 }
             });
             const plank = Bodies.rectangle(x, y - 20, 120, 10, {
                 density: 0.05,
+                label: LABEL_SEESAW_PLANK,
                 render: {
                     fillStyle: '#EAAC8B'
                 }
             });
+            
+            // Link the parts together for deletion using a unique ID
+            const seesawId = ++seesawIdCounter;
+            pivot.seesawId = seesawId;
+            plank.seesawId = seesawId;
             
             // Store original positions
             pivot.originalPosition = { x: pivot.position.x, y: pivot.position.y };
@@ -441,6 +469,58 @@ function updateStatus(message) {
  */
 function updateObjectCounter() {
     document.getElementById('objectCounter').textContent = `Objects: ${placedObjects.length}`;
+}
+
+function deleteObjectAtPosition(x, y) {
+    // Find all bodies at this position
+    const bodies = Query.point(placedObjects, { x, y });
+    
+    if (bodies.length > 0) {
+        // Delete the first body found
+        const bodyToDelete = bodies[0];
+        deleteObject(bodyToDelete);
+    }
+}
+
+function deleteObject(body) {
+    // Check if body exists in placedObjects
+    const index = placedObjects.indexOf(body);
+    if (index === -1) return;
+    
+    // Check if this is a seesaw part by looking at its label or seesawId
+    const isSeesawPart = (body.label === LABEL_SEESAW_PIVOT || body.label === LABEL_SEESAW_PLANK) && body.seesawId;
+    
+    if (isSeesawPart) {
+        // Find all parts of this seesaw using the seesawId
+        const seesawId = body.seesawId;
+        const seesawBodies = placedObjects.filter(obj => obj.seesawId === seesawId);
+        
+        // Find constraints connecting these bodies
+        const relatedConstraints = placedConstraints.filter(constraint => {
+            return seesawBodies.includes(constraint.bodyA) || seesawBodies.includes(constraint.bodyB);
+        });
+        
+        // Remove all seesaw parts and constraints
+        seesawBodies.forEach(b => {
+            Composite.remove(world, b);
+            placedObjects = placedObjects.filter(obj => obj !== b);
+        });
+        
+        relatedConstraints.forEach(c => {
+            Composite.remove(world, c);
+            placedConstraints = placedConstraints.filter(constraint => constraint !== c);
+        });
+        
+        updateStatus('Deleted seesaw');
+    } else {
+        // Remove single object
+        Composite.remove(world, body);
+        placedObjects = placedObjects.filter(obj => obj !== body);
+        updateStatus('Deleted object');
+    }
+    
+    // Update the object counter after deletion
+    updateObjectCounter();
 }
 
 // Initialize game when page loads

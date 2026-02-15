@@ -124,6 +124,7 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 |--------|---------|
 | Select Object | Click object button |
 | Place Object | Click on canvas |
+| Delete Object | Right-click on object |
 | Rotate Ramp CCW | `Q` key |
 | Rotate Ramp CW | `E` key |
 | Run Machine | Click "▶️ Run Machine" |
@@ -136,7 +137,7 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 A: The collision detection requires sufficient velocity. Try dropping objects from higher up, or use heavier objects like boxes for more impact force.
 
 **Q: Can I move objects after placing them?**  
-A: Not currently - but you can use Reset to restore positions or Clear All to start over.
+A: Not currently - but you can right-click to delete individual objects and place them again, or use Reset to restore positions or Clear All to start over.
 
 **Q: What happens if I run the machine with no objects placed?**  
 A: Nothing! The NPC will just stand there, safe and sound. You need to place objects first.
