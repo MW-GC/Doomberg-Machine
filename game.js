@@ -7,7 +7,8 @@ const Engine = Matter.Engine,
       Events = Matter.Events,
       Mouse = Matter.Mouse,
       MouseConstraint = Matter.MouseConstraint,
-      Body = Matter.Body;
+      Body = Matter.Body,
+      Query = Matter.Query;
 
 // Game constants
 const CANVAS_WIDTH = 1200;
@@ -194,6 +195,21 @@ function setupMouseControl() {
         const y = (event.clientY - rect.top) * scaleY;
         
         placeObject(selectedTool, x, y);
+    });
+    
+    // Right-click to delete objects
+    canvas.addEventListener('contextmenu', (event) => {
+        event.preventDefault();
+        
+        if (isRunning) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
+        
+        deleteObjectAtPosition(x, y);
     });
 }
 
@@ -430,6 +446,64 @@ function clearAll() {
 
 function updateStatus(message) {
     document.getElementById('status').textContent = message;
+}
+
+function deleteObjectAtPosition(x, y) {
+    // Find all bodies at this position
+    const bodies = Query.point(placedObjects, { x, y });
+    
+    if (bodies.length > 0) {
+        // Delete the first body found
+        const bodyToDelete = bodies[0];
+        deleteObject(bodyToDelete);
+    }
+}
+
+function deleteObject(body) {
+    // Check if body exists in placedObjects
+    const index = placedObjects.indexOf(body);
+    if (index === -1) return;
+    
+    // For seesaws, we need to remove both the pivot and plank, plus the constraint
+    const isSeesaw = placedObjects.some((obj, i) => {
+        // Check if this body is part of a seesaw by looking for a nearby body
+        if (obj !== body) {
+            const distance = Math.hypot(obj.position.x - body.position.x, obj.position.y - body.position.y);
+            // If bodies are close together (within 30 pixels), they might be seesaw parts
+            return distance < 30 && (i === index - 1 || i === index + 1);
+        }
+        return false;
+    });
+    
+    if (isSeesaw) {
+        // Find the related seesaw parts and constraints
+        const seesawBodies = placedObjects.filter(obj => {
+            const distance = Math.hypot(obj.position.x - body.position.x, obj.position.y - body.position.y);
+            return distance < 30;
+        });
+        
+        const relatedConstraints = placedConstraints.filter(constraint => {
+            return seesawBodies.includes(constraint.bodyA) || seesawBodies.includes(constraint.bodyB);
+        });
+        
+        // Remove all seesaw parts and constraints
+        seesawBodies.forEach(b => {
+            Composite.remove(world, b);
+            placedObjects = placedObjects.filter(obj => obj !== b);
+        });
+        
+        relatedConstraints.forEach(c => {
+            Composite.remove(world, c);
+            placedConstraints = placedConstraints.filter(constraint => constraint !== c);
+        });
+        
+        updateStatus('Deleted seesaw');
+    } else {
+        // Remove single object
+        Composite.remove(world, body);
+        placedObjects = placedObjects.filter(obj => obj !== body);
+        updateStatus('Deleted object');
+    }
 }
 
 // Initialize game when page loads
