@@ -124,6 +124,8 @@ let touchStartTime = 0;
 let touchStartPos = { x: 0, y: 0 };
 let longPressTimer = null;
 const LONG_PRESS_DURATION = 500; // ms for long press to delete
+const HAPTIC_FEEDBACK_DELETE = 50; // ms vibration for deletion
+const HAPTIC_FEEDBACK_ROTATE = 5; // ms vibration for rotation
 let lastTouchDistance = 0; // For pinch-to-zoom detection
 let initialPinchAngle = 0; // For two-finger rotation
 let lastTouchAngle = 0;
@@ -317,12 +319,13 @@ function applyMobileUI() {
     // Update instructions text for mobile
     const instructions = document.querySelector('.instructions');
     if (instructions) {
+        const longPressDuration = LONG_PRESS_DURATION / 1000; // Convert to seconds
         const mobileInstructions = `
             <h3>Mobile Instructions:</h3>
             <ol>
                 <li>Tap on an object type to select it</li>
                 <li>Tap on the canvas to place objects</li>
-                <li>Long-press (0.5s) on objects to delete them</li>
+                <li>Long-press (${longPressDuration}s) on objects to delete them</li>
                 <li>For ramps: use two fingers to rotate the angle</li>
                 <li>Use Undo and Redo buttons to reverse actions</li>
                 <li>Build a contraption that will hit the NPC (red figure on the right)</li>
@@ -339,11 +342,12 @@ function applyMobileUI() {
     
     // Setup collapsible control groups
     const controlGroups = document.querySelectorAll('.control-group');
-    controlGroups.forEach((group, index) => {
+    controlGroups.forEach((group) => {
         const heading = group.querySelector('h3');
         if (heading) {
+            const headingText = heading.textContent.trim();
             // Start with Actions and Status expanded, others collapsed
-            if (index !== 1 && index !== 3) { // Not Actions or Status
+            if (headingText !== 'Actions' && headingText !== 'Status') {
                 group.classList.add('collapsed');
             }
             
