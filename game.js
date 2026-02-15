@@ -77,14 +77,15 @@ let historyIndex = -1;
  * @param {number} explosionY - Y coordinate of explosion center
  * @param {number} explosionRadius - Radius of explosion effect (default 150)
  * @param {number} explosionForce - Force magnitude (default 0.08)
+ * @param {Matter.Body|null} explosiveBody - The body representing the explosive itself, which will be excluded from the explosion force
  */
-function applyExplosionForce(explosionX, explosionY, explosionRadius = 150, explosionForce = 0.08) {
+function applyExplosionForce(explosionX, explosionY, explosionRadius = 150, explosionForce = 0.08, explosiveBody = null) {
     // Get all bodies in the explosion radius
     const allBodies = Composite.allBodies(world);
     
     allBodies.forEach(body => {
         // Skip static bodies and the explosive itself
-        if (body.isStatic) return;
+        if (body.isStatic || body === explosiveBody) return;
         
         const dx = body.position.x - explosionX;
         const dy = body.position.y - explosionY;
@@ -171,27 +172,31 @@ function init() {
             const explosiveBody = pair.bodyA.label === 'explosive' ? pair.bodyA : 
                                   (pair.bodyB.label === 'explosive' ? pair.bodyB : null);
             
-            if (explosiveBody && isRunning) {
+            if (explosiveBody && isRunning && !explosiveBody.hasDetonated) {
                 // Get the other body in the collision
                 const otherBody = pair.bodyA === explosiveBody ? pair.bodyB : pair.bodyA;
-                const velocity = Math.abs(otherBody.velocity.x) + Math.abs(otherBody.velocity.y);
                 
-                // Detonate on significant impact
-                if (velocity > 1) {
-                    // Apply explosion force to nearby objects
-                    applyExplosionForce(explosiveBody.position.x, explosiveBody.position.y);
+                // Calculate relative velocity between the two bodies
+                const relativeVelocity = Math.sqrt(
+                    Math.pow(explosiveBody.velocity.x - otherBody.velocity.x, 2) +
+                    Math.pow(explosiveBody.velocity.y - otherBody.velocity.y, 2)
+                );
+                
+                // Detonate on significant impact based on relative velocity
+                if (relativeVelocity > 1) {
+                    // Mark as detonated immediately to prevent multiple detonations
+                    explosiveBody.hasDetonated = true;
+                    
+                    // Apply explosion force to nearby objects (excluding the explosive itself)
+                    applyExplosionForce(explosiveBody.position.x, explosiveBody.position.y, 150, 0.08, explosiveBody);
                     
                     // Change color to indicate explosion (visual feedback)
                     explosiveBody.render.fillStyle = '#FFA500';  // Orange explosion color
                     
-                    // Remove explosive after short delay
-                    setTimeout(() => {
-                        if (Composite.get(world, explosiveBody.id, 'body')) {
-                            Composite.remove(world, explosiveBody);
-                            placedObjects = placedObjects.filter(obj => obj !== explosiveBody);
-                            updateObjectCounter();
-                        }
-                    }, 100);
+                    // Remove explosive immediately
+                    Composite.remove(world, explosiveBody);
+                    placedObjects = placedObjects.filter(obj => obj !== explosiveBody);
+                    updateObjectCounter();
                     
                     updateStatus('💥 EXPLOSION!');
                 }
