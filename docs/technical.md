@@ -336,7 +336,40 @@ Factory function for creating and placing game objects.
   - `x` (number): X coordinate
   - `y` (number): Y coordinate
 - **Returns**: void
-- **Side Effects**: Adds body to world and tracking arrays
+- **Side Effects**: Adds body to world and tracking arrays, records action in history
+
+#### `deleteObjectAtPosition(x, y)`
+Deletes object at specified position using Matter.js Query.
+- **Parameters**:
+  - `x` (number): X coordinate
+  - `y` (number): Y coordinate
+- **Returns**: void
+- **Side Effects**: Removes body from world, records deletion action for undo
+- **Special Handling**: Properly removes seesaws (both bodies and constraints)
+
+#### `undo()`
+Reverts the most recent action in history.
+- **Preconditions**: `!isRunning && historyIndex >= 0`
+- **Returns**: void
+- **Side Effects**: Reverts action, decrements history index, updates buttons
+- **Supports**: Placement undo (removes objects), deletion undo (restores objects)
+
+#### `redo()`
+Re-applies a previously undone action.
+- **Preconditions**: `!isRunning && historyIndex < actionHistory.length - 1`
+- **Returns**: void
+- **Side Effects**: Applies action, increments history index, updates buttons
+
+#### `recordAction(action)`
+Records an action in the history for undo/redo.
+- **Parameters**: `action` (object): Action object with type, objectType, position, etc.
+- **Returns**: void
+- **Side Effects**: Adds to actionHistory, clears future history, updates buttons
+
+#### `updateUndoRedoButtons()`
+Updates the enabled/disabled state of undo/redo buttons.
+- **Returns**: void
+- **Side Effects**: Enables/disables buttons based on history state and isRunning
 
 #### `runMachine()`
 Activates physics simulation and makes NPC dynamic.
@@ -353,7 +386,7 @@ Restores all objects to original positions.
 #### `clearAll()`
 Removes all placed objects from the world.
 - **Returns**: void
-- **Side Effects**: Empties tracking arrays, calls reset if running
+- **Side Effects**: Empties tracking arrays, clears undo/redo history, calls reset if running
 
 #### `doomNPC()`
 Triggers the victory condition when NPC is hit.

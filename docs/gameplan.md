@@ -56,86 +56,110 @@ This document outlines potential improvements, fixes, and enhancements for the D
 
 These improvements offer high value with relatively low effort.
 
-#### 1. Undo/Redo System
+#### 1. Undo/Redo System ✅ **IMPLEMENTED**
 **Priority**: High  
 **Effort**: Medium  
-**Value**: High
+**Value**: High  
+**Status**: ✅ Completed (February 2026)
 
-**Description**: Allow players to undo/redo object placements
+**Description**: Allow players to undo/redo object placements and deletions
 
 **Implementation**:
 ```javascript
-let placementHistory = [];
+let actionHistory = [];
 let historyIndex = -1;
 
-function recordPlacement(action) {
-    placementHistory = placementHistory.slice(0, historyIndex + 1);
-    placementHistory.push(action);
+function recordAction(action) {
+    // Clear future history when making new action
+    actionHistory = actionHistory.slice(0, historyIndex + 1);
+    actionHistory.push(action);
     historyIndex++;
+    updateUndoRedoButtons();
 }
 
 function undo() {
-    if (historyIndex >= 0) {
-        const action = placementHistory[historyIndex];
-        revertAction(action);
-        historyIndex--;
-    }
+    if (isRunning || historyIndex < 0) return;
+    const action = actionHistory[historyIndex];
+    revertAction(action);
+    historyIndex--;
+    updateUndoRedoButtons();
 }
 
 function redo() {
-    if (historyIndex < placementHistory.length - 1) {
-        historyIndex++;
-        const action = placementHistory[historyIndex];
-        applyAction(action);
-    }
+    if (isRunning || historyIndex >= actionHistory.length - 1) return;
+    historyIndex++;
+    const action = actionHistory[historyIndex];
+    applyAction(action);
+    updateUndoRedoButtons();
 }
 ```
 
 **UI Changes**:
-- Add "↶ Undo" and "↷ Redo" buttons
-- Keyboard shortcuts: Ctrl+Z / Ctrl+Y
+- ✅ Added "↶ Undo" and "↷ Redo" buttons
+- ✅ Keyboard shortcuts: Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z
+- ✅ Buttons auto-enable/disable based on history state
+- ✅ Right-click deletion with undo support
+
+**Features Delivered**:
+- Full undo/redo for object placement
+- Right-click to delete objects (bonus feature)
+- Undo/redo of deletions
+- Support for complex objects (seesaws with constraints)
+- Smart button state management
+- Keyboard shortcuts
+- Status message updates
 
 **Benefits**:
-- Reduces frustration from misclicks
-- Encourages experimentation
-- Professional feel
+- ✅ Reduces frustration from misclicks
+- ✅ Encourages experimentation
+- ✅ Professional feel
+- ✅ Improved user experience
 
 ---
 
-#### 2. Object Deletion
+#### 2. Object Deletion ✅ **IMPLEMENTED**
 **Priority**: High  
 **Effort**: Low  
-**Value**: High
+**Value**: High  
+**Status**: ✅ Completed (February 2026) - Implemented as part of Undo/Redo system
 
 **Description**: Allow deletion of individual objects
 
 **Implementation**:
-- Add "🗑️ Delete Mode" tool button
-- Click on objects to remove them
-- Or: Right-click on objects to delete
+- ✅ Right-click on objects to delete them
+- ✅ Uses Matter.js Query.point() to find body at cursor
+- ✅ Properly handles complex objects (seesaws)
+- ✅ Integrates with undo/redo system
 
 **Code Changes**:
 ```javascript
-function deleteObject(body) {
-    Composite.remove(world, body);
-    placedObjects = placedObjects.filter(obj => obj !== body);
-    updateStatus(`Deleted object`);
+function deleteObjectAtPosition(x, y) {
+    const bodies = Matter.Query.point(placedObjects, { x, y });
+    if (bodies.length > 0) {
+        const body = bodies[0];
+        // Record deletion for undo
+        recordAction({ type: 'delete', ... });
+        // Remove object
+        Composite.remove(world, body);
+        placedObjects = placedObjects.filter(obj => obj !== body);
+    }
 }
 
 // Right-click handler
 canvas.addEventListener('contextmenu', (event) => {
     event.preventDefault();
-    const body = getBodyAtPosition(x, y);
-    if (body && placedObjects.includes(body)) {
-        deleteObject(body);
-    }
+    if (isRunning) return;
+    const x = /* scaled mouse coordinates */;
+    const y = /* scaled mouse coordinates */;
+    deleteObjectAtPosition(x, y);
 });
 ```
 
 **Benefits**:
-- Fine-tune contraptions without starting over
-- Less frustration
-- More iterative design process
+- ✅ Fine-tune contraptions without starting over
+- ✅ Less frustration
+- ✅ More iterative design process
+- ✅ Natural right-click interaction pattern
 
 ---
 
@@ -895,13 +919,14 @@ if (placedObjects.length >= MAX_OBJECTS) {
 ## 🎯 Recommended Implementation Roadmap
 
 ### Phase 1: Quick Wins (1-2 weeks)
-1. Object deletion (right-click)
+1. ✅ Object deletion (right-click) - **COMPLETED**
 2. Object counter display
 3. Pause/play button
-4. Undo/redo system
+4. ✅ Undo/redo system - **COMPLETED**
 5. Bug fixes (tunneling, reset issues)
 
-**Impact**: High usability improvements with minimal effort
+**Impact**: High usability improvements with minimal effort  
+**Status**: 2/5 completed (40%)
 
 ### Phase 2: Core Features (3-4 weeks)
 1. Save/load system (localStorage)
@@ -936,10 +961,11 @@ if (placedObjects.length >= MAX_OBJECTS) {
 
 ```
 High Value, Low Effort:
-- Object deletion ✓
-- Object counter ✓
-- Pause button ✓
-- Bug fixes ✓
+- ✅ Object deletion (COMPLETED Feb 2026)
+- Object counter
+- Pause button
+- ✅ Undo/redo system (COMPLETED Feb 2026)
+- Bug fixes
 
 High Value, High Effort:
 - Save/load system
