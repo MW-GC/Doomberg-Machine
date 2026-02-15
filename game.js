@@ -66,6 +66,14 @@ let seesawIdCounter = 0; // Counter for unique seesaw IDs
 let actionHistory = [];
 let historyIndex = -1;
 
+// Scoring system
+let gameStartTime = 0;
+let doomTime = 0;
+let collisionCount = 0;
+let objectTypesUsed = new Set();
+let currentScore = 0;
+let currentStars = 0;
+
 
 
 // Initialize the game
@@ -131,6 +139,11 @@ function init() {
         const pairs = event.pairs;
         
         pairs.forEach(pair => {
+            // Track all collisions during game for combo scoring
+            if (isRunning) {
+                collisionCount++;
+            }
+            
             if ((pair.bodyA.label === 'npc' || pair.bodyB.label === 'npc') && !npcDoomed) {
                 // Check if collision is significant based on the other body's velocity
                 const otherBody = pair.bodyA.label === 'npc' ? pair.bodyB : pair.bodyA;
@@ -138,6 +151,7 @@ function init() {
                 
                 if (velocity > DOOM_VELOCITY_THRESHOLD) {
                     npcDoomed = true;
+                    doomTime = (Date.now() - gameStartTime) / 1000; // Time in seconds
                     doomNPC();
                 }
             }
@@ -580,6 +594,9 @@ function placeObject(type, x, y) {
         return;
     }
     
+    // Track object type for scoring
+    objectTypesUsed.add(type);
+    
     let body;
     
     switch(type) {
@@ -687,6 +704,13 @@ function runMachine() {
     isPaused = false;
     isSlowMotion = false;
     npcDoomed = false;
+    
+    // Reset scoring metrics
+    gameStartTime = Date.now();
+    doomTime = 0;
+    collisionCount = 0;
+    currentScore = 0;
+    currentStars = 0;
     
     // Make NPC dynamic
     Body.setStatic(npc, false);
@@ -807,6 +831,115 @@ function doomNPC() {
     
     // Celebrate with a bit of extra force
     Body.applyForce(npc, npc.position, { x: 0.05, y: -0.1 });
+    
+    // Calculate and display score after a short delay
+    setTimeout(() => {
+        calculateAndDisplayScore();
+    }, 1000);
+}
+
+function calculateAndDisplayScore() {
+    let score = 0;
+    let breakdown = [];
+    
+    // Base doom score
+    if (npcDoomed) {
+        score += 1000;
+        breakdown.push({ label: 'NPC Doomed', points: 1000 });
+    }
+    
+    // Efficiency bonus (fewer objects = higher score)
+    // Max bonus 500 for 1 object, decreases by 20 per object
+    const objectCount = placedObjects.length;
+    const efficiencyBonus = Math.max(0, 500 - ((objectCount - 1) * 20));
+    score += efficiencyBonus;
+    breakdown.push({ label: `Efficiency (${objectCount} objects)`, points: efficiencyBonus });
+    
+    // Speed bonus (faster doom = higher score)
+    // Max bonus 500 for doom under 1 second, decreases by 50 per second
+    const speedBonus = Math.max(0, Math.round(500 - (doomTime * 50)));
+    score += speedBonus;
+    breakdown.push({ label: `Speed (${doomTime.toFixed(1)}s)`, points: speedBonus });
+    
+    // Variety bonus (different object types used)
+    const varietyCount = objectTypesUsed.size;
+    const varietyBonus = varietyCount * 100;
+    score += varietyBonus;
+    breakdown.push({ label: `Variety (${varietyCount} types)`, points: varietyBonus });
+    
+    // Combo multiplier based on collision chains
+    // More collisions = more chain reactions
+    let comboMultiplier = 1.0;
+    if (collisionCount > 5) {
+        comboMultiplier = 1.1 + Math.min((collisionCount - 5) * 0.05, 0.5); // Max 1.6x
+        breakdown.push({ label: `Combo Chain (${collisionCount} collisions)`, points: 0, multiplier: comboMultiplier });
+    }
+    
+    // Apply combo multiplier
+    score = Math.round(score * comboMultiplier);
+    
+    // Calculate star rating
+    let stars = 1;
+    if (score >= 2000) stars = 2;
+    if (score >= 2800) stars = 3;
+    
+    currentScore = score;
+    currentStars = stars;
+    
+    // Display score modal
+    showScoreModal(score, stars, breakdown);
+}
+
+function showScoreModal(score, stars, breakdown) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('scoreModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'scoreModal';
+        modal.className = 'score-modal';
+        modal.innerHTML = `
+            <div class="score-modal-content">
+                <div class="score-header">
+                    <h2>Mission Complete!</h2>
+                    <div class="score-stars" id="scoreStars"></div>
+                </div>
+                <div class="score-total" id="scoreTotal"></div>
+                <div class="score-breakdown" id="scoreBreakdown"></div>
+                <button id="closeScoreModal" class="action-btn">Continue Building</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Close modal handler
+        document.getElementById('closeScoreModal').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+    }
+    
+    // Update modal content
+    const starsContainer = document.getElementById('scoreStars');
+    starsContainer.innerHTML = '⭐'.repeat(stars) + '☆'.repeat(3 - stars);
+    
+    const totalContainer = document.getElementById('scoreTotal');
+    totalContainer.innerHTML = `<div class="score-number">${score.toLocaleString()}</div><div class="score-label">Total Score</div>`;
+    
+    const breakdownContainer = document.getElementById('scoreBreakdown');
+    let breakdownHTML = '<table class="score-table">';
+    breakdown.forEach(item => {
+        if (item.multiplier) {
+            breakdownHTML += `<tr><td>${item.label}</td><td class="multiplier">×${item.multiplier.toFixed(2)}</td></tr>`;
+        } else {
+            breakdownHTML += `<tr><td>${item.label}</td><td>+${item.points}</td></tr>`;
+        }
+    });
+    breakdownHTML += '</table>';
+    breakdownContainer.innerHTML = breakdownHTML;
+    
+    // Show modal with animation
+    modal.style.display = 'flex';
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
 }
 
 function resetMachine() {
@@ -877,6 +1010,12 @@ function clearAll() {
     actionHistory = [];
     historyIndex = -1;
     updateUndoRedoButtons();
+    
+    // Reset scoring metrics
+    objectTypesUsed.clear();
+    collisionCount = 0;
+    currentScore = 0;
+    currentStars = 0;
     
     // Reset if running
     if (isRunning) {

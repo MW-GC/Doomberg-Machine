@@ -96,6 +96,77 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
    - **🔄 Reset**: Restores all objects to their starting positions (only works while machine is running)
    - **🗑️ Clear All**: Removes all placed objects to start fresh
 
+9. **View Your Score**
+   - After successfully dooming the NPC, a score modal will appear
+   - Your performance is evaluated on multiple factors
+   - Earn 1-3 stars based on your total score!
+
+## ⭐ Scoring System
+
+When you successfully doom the NPC, your contraption is scored based on four key metrics:
+
+### 📊 Scoring Factors
+
+**🎯 Success (1000 points)**
+- Base reward for successfully dooming the NPC
+- This is your foundation score
+
+**⚡ Efficiency Bonus (up to 500 points)**
+- Fewer objects = higher score
+- Formula: `500 - ((object_count - 1) × 20)`
+- Using just 1 object gives maximum bonus!
+- Each additional object reduces your bonus by 20 points
+
+**⏱️ Speed Bonus (up to 500 points)**
+- Faster doom = higher score
+- Formula: `500 - (doom_time_seconds × 50)`
+- Dooming in under 1 second gives maximum bonus
+- Each additional second reduces your bonus by 50 points
+
+**🎨 Variety Bonus (100 points per type)**
+- Using different object types increases your score
+- Each unique object type adds 100 points
+- Encourages creative, diverse contraptions
+- Maximum: 600 points (all 6 object types)
+
+**🔥 Combo Multiplier (1.0x - 1.6x)**
+- More collisions = higher multiplier
+- Activates when you have 5+ collisions
+- Formula: `1.1 + ((collisions - 5) × 0.05)`
+- Maximum multiplier: 1.6x (at 15+ collisions)
+- Rewards complex chain reactions!
+
+### 🌟 Star Ratings
+
+Your final score determines your star rating:
+
+- ⭐ **1 Star**: 0 - 1,999 points (Good job!)
+- ⭐⭐ **2 Stars**: 2,000 - 2,799 points (Excellent!)
+- ⭐⭐⭐ **3 Stars**: 2,800+ points (Perfect!)
+
+### 🏆 Example Scores
+
+**Simple Success (1 Ball, Fast)**
+- 1 object, 1.2 seconds, 1 type, 3 collisions
+- Score: 1,000 + 500 + 440 + 100 = 2,040 (⭐⭐)
+
+**Efficient Master (Minimal Objects)**
+- 2 objects, 2.5 seconds, 2 types, 5 collisions
+- Score: 1,000 + 480 + 375 + 200 = 2,055 (⭐⭐)
+
+**Variety Showman (All Types)**
+- 10 objects, 5 seconds, 6 types, 20+ collisions
+- Score: (1,000 + 320 + 250 + 600) × 1.6 = 3,472 (⭐⭐⭐)
+
+**Perfect Machine (The Dream)**
+- 1 object, 0.5 seconds, 1 type, minimal collisions
+- Score: 1,000 + 500 + 475 + 100 = 2,075 (⭐⭐)
+
+To get 3 stars, focus on:
+- Fast completion (under 2 seconds)
+- Efficient use of objects (fewer is better for efficiency, but variety helps too)
+- Creating chain reactions for combo multipliers
+
 ## 💡 Strategy Tips
 
 ### For Beginners
@@ -112,11 +183,13 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 - **Platform Staging**: Build multi-level contraptions with platforms at different heights
 
 ### Creative Challenges
-- 🏆 **Minimalist**: Doom the NPC with the fewest objects possible
-- 🏆 **Rube Goldberg Master**: Create the longest chain reaction before impact
-- 🏆 **Precision Engineer**: Hit the NPC within 3 seconds of starting
+- 🏆 **Minimalist**: Doom the NPC with the fewest objects possible (maximize efficiency bonus!)
+- 🏆 **Rube Goldberg Master**: Create the longest chain reaction before impact (maximize combo multiplier!)
+- 🏆 **Precision Engineer**: Hit the NPC within 1 second of starting (maximize speed bonus!)
 - 🏆 **The Domino Effect**: Doom the NPC using only dominoes
 - 🏆 **No Direct Hit**: Use a seesaw or indirect method to launch the final projectile
+- 🏆 **Variety Show**: Use all 6 object types in one contraption (maximize variety bonus!)
+- 🏆 **Perfect Score**: Achieve 3 stars with the highest possible score!
 
 ## 🎮 Controls Reference
 
