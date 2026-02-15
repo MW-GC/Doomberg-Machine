@@ -183,6 +183,7 @@ function placeObject(type, x, y) {
 let isRunning = false;      // Physics simulation status
 let isPaused = false;       // Pause state (timeScale = 0)
 let isSlowMotion = false;   // Slow-motion state (timeScale = 0.25)
+let isGridEnabled = false;  // Grid overlay and snap-to-grid state
 let npcDoomed = false;      // Victory condition flag
 let selectedTool = null;    // Currently selected object type
 let placedObjects = [];     // Array of placed body references
@@ -319,13 +320,16 @@ render = Render.create({
     canvas: canvas,
     engine: engine,
     options: {
-        width: 1200,
-        height: 600,
+        width: 1200,        // CANVAS_WIDTH
+        height: 600,        // CANVAS_HEIGHT
         wireframes: false,
         background: '#87CEEB'  // Matter.js handles background fill
     }
 });
 ```
+
+**Grid Constants**:
+- **`GRID_SIZE`**: 40 pixels - Grid cell size for overlay and snap-to-grid
 
 **Important**: The canvas element should NOT have a CSS background as it will render over the canvas drawing context. Matter.js's `background` option fills the canvas properly before rendering physics bodies.
 
@@ -625,6 +629,15 @@ Applies appropriate timeScale based on current state.
   - Slow-motion (not paused): `0.25`
   - Normal (not paused): `1.0`
 
+#### `toggleGrid()`
+Toggles the grid overlay and snap-to-grid functionality.
+- **Returns**: void
+- **Side Effects**: 
+  - Updates `isGridEnabled` state
+  - Adds/removes 'active' class from grid button
+  - Updates button text (⊞ Grid: ON/OFF)
+  - Updates status message
+- **Behavior**: When enabled, shows 40px grid overlay and snaps object placement to grid intersections
 #### `saveContraption(name)`
 Saves current contraption design to localStorage.
 - **Parameters**: `name` (string): Name for the saved design (max 30 chars)
@@ -672,6 +685,23 @@ Normalizes an angle to the range [0, 2π).
 - **Parameters**: `angle` (number): Angle in radians
 - **Returns**: number - Normalized angle
 
+#### `snapToGrid(x, y)`
+Snaps coordinates to the nearest grid intersection when grid is enabled.
+- **Parameters**: 
+  - `x` (number): X coordinate
+  - `y` (number): Y coordinate
+- **Returns**: object - `{x: number, y: number}` with snapped or original coordinates
+- **Behavior**: If `isGridEnabled` is false, returns original coordinates unchanged
+- **Grid Size**: Uses `GRID_SIZE` constant (40px)
+
+#### `drawGrid(context)`
+Draws the grid overlay on the canvas.
+- **Parameters**: `context` (CanvasRenderingContext2D): Canvas 2D context
+- **Returns**: void
+- **Behavior**: If `isGridEnabled` is false, does nothing
+- **Appearance**: Semi-transparent black lines (rgba(0, 0, 0, 0.1))
+- **Pattern**: Draws vertical and horizontal lines at `GRID_SIZE` intervals
+
 #### `rotateRamp(angleChange)`
 Updates the current ramp rotation angle.
 - **Parameters**: `angleChange` (number): Angle delta in radians
@@ -689,6 +719,7 @@ Updates the status display text.
 ```javascript
 canvas.addEventListener('click', (event) => {
     // Convert screen coordinates to canvas coordinates
+    // Apply snap-to-grid if enabled
     // Call placeObject() with selected tool
 });
 ```

@@ -87,27 +87,34 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
      - Each press rotates by 15 degrees
    - Current angle displays in the status bar
 
-4. **Place Objects**
-   - Click anywhere on the blue canvas to place the selected object
-   - Objects appear at your click location
-   - You can place unlimited objects!
+4. **Toggle Grid** (Optional)
+   - Click the **⊞ Grid** button to enable/disable the grid overlay
+   - When enabled, a 40px grid appears on the canvas
+   - Objects snap to the nearest grid intersection for precise alignment
+   - Grid OFF allows free placement at any position
 
-5. **Build Your Machine**
+5. **Place Objects**
+   - Click anywhere on the blue canvas to place the selected object
+   - Objects appear at your click location (or snapped to grid if enabled)
+   - You can place up to 100 objects for optimal performance
+
+6. **Build Your Machine**
    - Combine different objects strategically
    - Think about gravity, momentum, and chain reactions
    - The NPC is positioned on the right side - plan your trajectory!
+   - Use the grid for precise alignment and professional-looking contraptions
 
-6. **Run the Simulation**
+7. **Run the Simulation**
    - Click the green **▶️ Run Machine** button
    - Physics activates and your contraption comes to life
    - Watch as objects interact and (hopefully) doom the NPC
 
-7. **Check Success**
+8. **Check Success**
    - If an object hits the NPC with sufficient velocity, doom is achieved!
    - NPC Status changes to "DOOMED! 💀☠️"
    - NPC turns black to indicate successful doom
 
-8. **Reset or Clear**
+9. **Reset or Clear**
    - **🔄 Reset**: Restores all objects to their starting positions (only works while machine is running)
    - **🗑️ Clear All**: Removes all placed objects to start fresh
 
@@ -216,6 +223,7 @@ The game includes a complete save/load system that stores your contraptions in y
 - **Use Ramps**: Direct falling objects toward the NPC with angled ramps
 - **Test Early**: Don't build too much before testing - run your machine often!
 - **Learn Physics**: Heavier objects (boxes) deliver more impact force
+- **Enable Grid**: Use the grid toggle for precise, aligned contraptions
 
 ### Advanced Techniques
 - **Multi-Stage Machines**: Create multiple chain reactions that lead to each other
@@ -243,6 +251,7 @@ The game includes a complete save/load system that stores your contraptions in y
 | Select Object | Click object button |
 | Place Object | Click on canvas |
 | Delete Object | Right-click on object |
+| Toggle Grid/Snap | Click "⊞ Grid" button |
 | Rotate Ramp CCW | `Q` key |
 | Rotate Ramp CW | `E` key |
 | Run Machine | Click "▶️ Run Machine" |
@@ -287,6 +296,9 @@ A: The new save will overwrite the old one. Use unique names or add version numb
 
 **Q: How do I use pause and slow-motion?**  
 A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.
+
+**Q: What does the Grid toggle do?**  
+A: The Grid button enables/disables a 40px grid overlay on the canvas. When enabled (Grid: ON), objects automatically snap to the nearest grid intersection for perfectly aligned placement. Turn it off (Grid: OFF) for free placement at any position. Great for creating precise, professional-looking contraptions!
 
 **Q: Does the NPC fight back?**  
 A: Nope! The NPC is purely a target and doesn't move or defend itself (until you hit it).
