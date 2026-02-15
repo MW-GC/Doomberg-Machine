@@ -246,7 +246,7 @@ function setupEventListeners() {
     // Keyboard controls for rotating ramps
     document.addEventListener('keydown', (event) => {
         // Space key for pause/unpause
-        if (event.key === ' ' || event.key === 'Spacebar') {
+        if (event.key === ' ') {
             if (isRunning) {
                 event.preventDefault(); // Prevent page scroll
                 togglePause();
@@ -434,19 +434,23 @@ function togglePause() {
 }
 
 function toggleSlowMotion() {
-    if (!isRunning || isPaused) return;
+    if (!isRunning) return;
     
     const slowMotionBtn = document.getElementById('slowMotionBtn');
     
     if (slowMotionBtn.classList.contains('active')) {
         // Turn off slow motion
         slowMotionBtn.classList.remove('active');
-        engine.timing.timeScale = 1.0;
-        updateStatus('Normal speed resumed.');
+        if (!isPaused) {
+            engine.timing.timeScale = 1.0;
+        }
+        updateStatus('Normal speed will be used when simulation resumes.');
     } else {
         // Turn on slow motion
         slowMotionBtn.classList.add('active');
-        engine.timing.timeScale = 0.25;
+        if (!isPaused) {
+            engine.timing.timeScale = 0.25;
+        }
         updateStatus('Slow motion enabled (25% speed).');
     }
     
