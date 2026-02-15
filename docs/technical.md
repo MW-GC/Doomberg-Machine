@@ -168,6 +168,8 @@ function placeObject(type, x, y) {
 - `ramp`: Static angled platform (rotatable)
 - `platform`: Static horizontal ledge
 - `seesaw`: Compound body with pivot constraint
+- `spring`: Circle body with extreme restitution (1.5) for launching objects
+- `explosive`: Circle body with detonation capability on impact, applies radial force to nearby objects
 
 ### 3. State Management
 
@@ -445,6 +447,18 @@ Deletes object at specified position using Matter.js Query.
 - **Side Effects**: Removes body from world, records deletion action for undo
 - **Special Handling**: Properly removes seesaws (both bodies and constraints)
 
+#### `applyExplosionForce(explosionX, explosionY, explosionRadius, explosionForce)`
+Applies radial force to all nearby objects from an explosion center.
+- **Parameters**:
+  - `explosionX` (number): X coordinate of explosion center
+  - `explosionY` (number): Y coordinate of explosion center
+  - `explosionRadius` (number, optional): Radius of explosion effect (default: 150)
+  - `explosionForce` (number, optional): Force magnitude (default: 0.08)
+- **Returns**: void
+- **Side Effects**: Applies impulse force to all dynamic bodies within radius
+- **Algorithm**: Force decreases linearly with distance from center (inverse distance scaling)
+- **Usage**: Called automatically when explosive objects detonate on collision
+
 #### `undo()`
 Reverts the most recent action in history.
 - **Preconditions**: `!isRunning && historyIndex >= 0`
@@ -655,10 +669,21 @@ To add a new object type, follow this pattern:
 ```javascript
 case 'spring':
     body = Bodies.circle(x, y, 15, {
-        restitution: 1.2,  // Super bouncy!
+        restitution: 1.5,  // Super bouncy!
         density: 0.02,
         render: {
-            fillStyle: '#FF00FF'
+            fillStyle: '#9B59B6'  // Purple
+        }
+    });
+    break;
+
+case 'explosive':
+    body = Bodies.circle(x, y, 18, {
+        restitution: 0.3,
+        density: 0.06,
+        label: 'explosive',  // For collision detection
+        render: {
+            fillStyle: '#E74C3C'  // Red
         }
     });
     break;
