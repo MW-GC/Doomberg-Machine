@@ -179,6 +179,8 @@ function placeObject(type, x, y) {
 **State Variables**:
 ```javascript
 let isRunning = false;      // Physics simulation status
+let isPaused = false;       // Pause state (timeScale = 0)
+let isSlowMotion = false;   // Slow-motion state (timeScale = 0.25)
 let npcDoomed = false;      // Victory condition flag
 let selectedTool = null;    // Currently selected object type
 let placedObjects = [];     // Array of placed body references
@@ -205,7 +207,33 @@ Events.on(engine, 'collisionStart', (event) => {
 const velocity = Math.abs(otherBody.velocity.x) + Math.abs(otherBody.velocity.y);
 ```
 
-### 5. Reset System
+### 5. Playback Control System
+
+**Simulation Speed Control**:
+- Uses Matter.js `engine.timing.timeScale` to control simulation speed
+- Three states: Normal (1.0), Slow-motion (0.25), Paused (0)
+- State managed by `isPaused` and `isSlowMotion` boolean flags
+
+**Speed Calculation**:
+```javascript
+function applyTimeScale() {
+    if (isPaused) {
+        engine.timing.timeScale = 0;           // Paused
+    } else if (isSlowMotion) {
+        engine.timing.timeScale = 0.25;        // 25% speed
+    } else {
+        engine.timing.timeScale = 1.0;         // Normal speed
+    }
+}
+```
+
+**Features**:
+- Pause/Resume: Space key or button click
+- Slow-motion: Toggle button (25% speed)
+- Can queue slow-motion while paused (applies on resume)
+- Context-aware status messages
+
+### 6. Reset System
 
 **Reset Functionality**:
 - Stops the physics runner
@@ -213,6 +241,7 @@ const velocity = Math.abs(otherBody.velocity.x) + Math.abs(otherBody.velocity.y)
 - Restores all dynamic objects to original positions
 - Clears velocities and angular momentum
 - Resets angle to original orientation
+- Resets playback state (isPaused, isSlowMotion)
 - Re-enables UI controls
 
 **Original Position Storage**:
@@ -388,11 +417,49 @@ Removes all placed objects from the world.
 - **Returns**: void
 - **Side Effects**: Empties tracking arrays, clears undo/redo history, calls reset if running
 
+#### `deleteObjectAtPosition(x, y)`
+Finds and deletes the object at the specified canvas position.
+- **Parameters**: 
+  - `x` (number): Canvas x-coordinate
+  - `y` (number): Canvas y-coordinate
+- **Returns**: void
+- **Side Effects**: Calls `deleteObject()` if body found
+
+#### `deleteObject(body)`
+Removes a body from the world, handling compound objects (seesaws).
+- **Parameters**: `body` (Body): Matter.js body to delete
+- **Returns**: void
+- **Side Effects**: Removes body and related constraints, updates arrays and status
+- **Notes**: For seesaws, removes both pivot and plank using `seesawId`
+
 #### `doomNPC()`
 Triggers the victory condition when NPC is hit.
 - **Preconditions**: `!npcDoomed`
 - **Returns**: void
 - **Side Effects**: Updates UI, changes NPC color, applies force
+
+#### `togglePause()`
+Toggles simulation pause state.
+- **Preconditions**: `isRunning`
+- **Returns**: void
+- **Side Effects**: Updates `isPaused`, applies timeScale, updates UI
+- **Notes**: Uses `applyTimeScale()` to set `engine.timing.timeScale` to 0 (paused) or appropriate speed
+
+#### `toggleSlowMotion()`
+Toggles slow-motion mode (25% speed).
+- **Preconditions**: `isRunning`
+- **Returns**: void
+- **Side Effects**: Updates `isSlowMotion`, applies timeScale if not paused, updates UI
+- **Notes**: Can be toggled while paused; takes effect on resume
+
+#### `applyTimeScale()`
+Applies appropriate timeScale based on current state.
+- **Returns**: void
+- **Side Effects**: Sets `engine.timing.timeScale` based on `isPaused` and `isSlowMotion`
+- **Logic**: 
+  - Paused: `0`
+  - Slow-motion (not paused): `0.25`
+  - Normal (not paused): `1.0`
 
 ### Utility Functions
 

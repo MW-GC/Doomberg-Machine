@@ -124,9 +124,12 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 |--------|---------|
 | Select Object | Click object button |
 | Place Object | Click on canvas |
+| Delete Object | Right-click on object |
 | Rotate Ramp CCW | `Q` key |
 | Rotate Ramp CW | `E` key |
 | Run Machine | Click "▶️ Run Machine" |
+| Pause/Resume | Click "⏸️ Pause" / "▶️ Play" or `Space` key |
+| Slow Motion Toggle | Click "🐌 Slow-Mo" |
 | Reset Positions | Click "🔄 Reset" |
 | Clear All | Click "🗑️ Clear All" |
 
@@ -136,7 +139,7 @@ The red stick figure NPC stands innocently on the right side of the screen, blis
 A: The collision detection requires sufficient velocity. Try dropping objects from higher up, or use heavier objects like boxes for more impact force.
 
 **Q: Can I move objects after placing them?**  
-A: Not currently - but you can use Reset to restore positions or Clear All to start over.
+A: Not currently - but you can right-click to delete individual objects and place them again, or use Reset to restore positions or Clear All to start over.
 
 **Q: What happens if I run the machine with no objects placed?**  
 A: Nothing! The NPC will just stand there, safe and sound. You need to place objects first.
@@ -146,6 +149,9 @@ A: When you have the ramp tool selected, press Q or E to rotate, and the current
 
 **Q: Can objects go off-screen?**  
 A: No - the game has invisible walls on the left and right sides to keep everything in play.
+
+**Q: How do I use pause and slow-motion?**  
+A: Once the simulation is running, press the Space key or click the "⏸️ Pause" button to pause. Press again to resume. Click "🐌 Slow-Mo" to run at 25% speed for detailed observation. You can even toggle slow-motion while paused - it will activate when you resume.
 
 **Q: Does the NPC fight back?**  
 A: Nope! The NPC is purely a target and doesn't move or defend itself (until you hit it).

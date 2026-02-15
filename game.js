@@ -17,6 +17,10 @@ const GROUND_HEIGHT = 20;
 const NPC_LEG_OFFSET = 35; // Distance from body center to leg center
 const NPC_HALF_LEG_HEIGHT = 10; // Half the height of NPC legs
 
+// Object labels
+const LABEL_SEESAW_PIVOT = 'seesaw-pivot';
+const LABEL_SEESAW_PLANK = 'seesaw-plank';
+
 /**
  * Normalize an angle in radians to the range [0, 2π).
  * @param {number} angle
@@ -42,11 +46,14 @@ let world;
 let canvas;
 let selectedTool = null;
 let isRunning = false;
+let isPaused = false;
+let isSlowMotion = false;
 let npc;
 let npcDoomed = false;
 let placedObjects = [];
 let placedConstraints = [];
 let currentRampAngle = DEFAULT_RAMP_ANGLE;
+let seesawIdCounter = 0; // Counter for unique seesaw IDs
 
 // Undo/Redo system
 let actionHistory = [];
@@ -242,6 +249,8 @@ function setupEventListeners() {
     document.getElementById('clearBtn').addEventListener('click', clearAll);
     document.getElementById('undoBtn').addEventListener('click', undo);
     document.getElementById('redoBtn').addEventListener('click', redo);
+    document.getElementById('pauseBtn').addEventListener('click', togglePause);
+    document.getElementById('slowMotionBtn').addEventListener('click', toggleSlowMotion);
     
     // Keyboard controls for rotating ramps and undo/redo
     document.addEventListener('keydown', (event) => {
@@ -262,6 +271,15 @@ function setupEventListeners() {
             }
         }
         
+        // Space key for pause/unpause
+        if (event.key === ' ') {
+            if (isRunning) {
+                event.preventDefault(); // Prevent page scroll
+                togglePause();
+            }
+            return;
+        }
+      
         // Ramp rotation controls
         if (isRunning || selectedTool !== 'ramp') return;
         
@@ -598,6 +616,7 @@ function placeObject(type, x, y) {
             // Create seesaw as two bodies - the pivot and the plank
             const pivot = Bodies.rectangle(x, y, 10, 40, {
                 isStatic: true,
+                label: LABEL_SEESAW_PIVOT,
                 render: {
                     fillStyle: '#AA8976'
                 },
@@ -605,6 +624,7 @@ function placeObject(type, x, y) {
             });
             const plank = Bodies.rectangle(x, y - 20, 120, 10, {
                 density: 0.05,
+                label: LABEL_SEESAW_PLANK,
                 render: {
                     fillStyle: '#EAAC8B'
                 },
@@ -649,6 +669,7 @@ function placeObject(type, x, y) {
             });
             
             updateStatus(`Placed seesaw at (${Math.round(x)}, ${Math.round(y)})`);
+            updateObjectCounter();
             return;
     }
     
@@ -671,6 +692,7 @@ function placeObject(type, x, y) {
         });
         
         updateStatus(`Placed ${type} at (${Math.round(x)}, ${Math.round(y)})`);
+        updateObjectCounter();
     }
 }
 
@@ -753,10 +775,15 @@ function runMachine() {
     if (isRunning) return;
     
     isRunning = true;
+    isPaused = false;
+    isSlowMotion = false;
     npcDoomed = false;
     
     // Make NPC dynamic
     Body.setStatic(npc, false);
+    
+    // Reset timeScale to normal
+    applyTimeScale();
     
     // Create or reuse runner
     if (!runner) {
@@ -765,8 +792,97 @@ function runMachine() {
     Runner.run(runner, engine);
     
     document.getElementById('runBtn').disabled = true;
+
+    document.getElementById('pauseBtn').disabled = false;
+    document.getElementById('slowMotionBtn').disabled = false;
+    
+    // Ensure slow-motion button reflects state
+    document.getElementById('slowMotionBtn').classList.remove('active');
+  
     updateUndoRedoButtons();
+    updatePauseButtonText();
+    updateSlowMotionButtonText();
     updateStatus('Machine running! Watch the chaos unfold...');
+}
+
+function applyTimeScale() {
+    if (isPaused) {
+        engine.timing.timeScale = 0;
+    } else if (isSlowMotion) {
+        engine.timing.timeScale = 0.25;
+    } else {
+        engine.timing.timeScale = 1.0;
+    }
+}
+
+function togglePause() {
+    if (!isRunning) return;
+    
+    isPaused = !isPaused;
+    
+    if (isPaused) {
+        applyTimeScale();
+        updateStatus('Simulation paused. Press Space or click Pause to resume.');
+    } else {
+        applyTimeScale();
+        updateStatus('Machine running! Watch the chaos unfold...');
+    }
+    
+    updatePauseButtonText();
+}
+
+function toggleSlowMotion() {
+    if (!isRunning) return;
+    
+    isSlowMotion = !isSlowMotion;
+    
+    // Update UI to reflect state
+    const slowMotionBtn = document.getElementById('slowMotionBtn');
+    if (isSlowMotion) {
+        slowMotionBtn.classList.add('active');
+    } else {
+        slowMotionBtn.classList.remove('active');
+    }
+    
+    // Apply timeScale if not paused
+    if (!isPaused) {
+        applyTimeScale();
+    }
+    
+    // Update status message
+    if (isSlowMotion) {
+        if (isPaused) {
+            updateStatus('Slow motion will be used when simulation resumes.');
+        } else {
+            updateStatus('Slow motion enabled (25% speed).');
+        }
+    } else {
+        if (isPaused) {
+            updateStatus('Normal speed will be used when simulation resumes.');
+        } else {
+            updateStatus('Slow motion disabled. Running at normal speed.');
+        }
+    }
+    
+    updateSlowMotionButtonText();
+}
+
+function updatePauseButtonText() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (isPaused) {
+        pauseBtn.textContent = '▶️ Play';
+    } else {
+        pauseBtn.textContent = '⏸️ Pause';
+    }
+}
+
+function updateSlowMotionButtonText() {
+    const slowMotionBtn = document.getElementById('slowMotionBtn');
+    if (slowMotionBtn.classList.contains('active')) {
+        slowMotionBtn.textContent = '🐌 Slow-Mo: ON';
+    } else {
+        slowMotionBtn.textContent = '🐌 Slow-Mo';
+    }
 }
 
 function doomNPC() {
@@ -806,10 +922,20 @@ function resetMachine() {
         }
     });
     
+    // Reset timeScale
+    engine.timing.timeScale = 1.0;
+    
     isRunning = false;
+    isPaused = false;
+    isSlowMotion = false;
     npcDoomed = false;
     document.getElementById('runBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('slowMotionBtn').disabled = true;
+    document.getElementById('slowMotionBtn').classList.remove('active');
     updateUndoRedoButtons();
+    updatePauseButtonText();
+    updateSlowMotionButtonText();
     
     const doomStatus = document.getElementById('doomStatus');
     doomStatus.textContent = 'NPC Status: Alive 😊';
@@ -840,10 +966,71 @@ function clearAll() {
     }
     
     updateStatus('All objects cleared! Start building your machine.');
+    updateObjectCounter();
 }
 
 function updateStatus(message) {
     document.getElementById('status').textContent = message;
+}
+
+/**
+ * Update the object counter display to show the current number of placed objects.
+ * Note: Seesaws count as 2 objects since they consist of both a pivot and plank body.
+ */
+function updateObjectCounter() {
+    document.getElementById('objectCounter').textContent = `Objects: ${placedObjects.length}`;
+}
+
+function deleteObjectAtPosition(x, y) {
+    // Find all bodies at this position
+    const bodies = Query.point(placedObjects, { x, y });
+    
+    if (bodies.length > 0) {
+        // Delete the first body found
+        const bodyToDelete = bodies[0];
+        deleteObject(bodyToDelete);
+    }
+}
+
+function deleteObject(body) {
+    // Check if body exists in placedObjects
+    const index = placedObjects.indexOf(body);
+    if (index === -1) return;
+    
+    // Check if this is a seesaw part by looking at its label or seesawId
+    const isSeesawPart = (body.label === LABEL_SEESAW_PIVOT || body.label === LABEL_SEESAW_PLANK) && body.seesawId;
+    
+    if (isSeesawPart) {
+        // Find all parts of this seesaw using the seesawId
+        const seesawId = body.seesawId;
+        const seesawBodies = placedObjects.filter(obj => obj.seesawId === seesawId);
+        
+        // Find constraints connecting these bodies
+        const relatedConstraints = placedConstraints.filter(constraint => {
+            return seesawBodies.includes(constraint.bodyA) || seesawBodies.includes(constraint.bodyB);
+        });
+        
+        // Remove all seesaw parts and constraints
+        seesawBodies.forEach(b => {
+            Composite.remove(world, b);
+            placedObjects = placedObjects.filter(obj => obj !== b);
+        });
+        
+        relatedConstraints.forEach(c => {
+            Composite.remove(world, c);
+            placedConstraints = placedConstraints.filter(constraint => constraint !== c);
+        });
+        
+        updateStatus('Deleted seesaw');
+    } else {
+        // Remove single object
+        Composite.remove(world, body);
+        placedObjects = placedObjects.filter(obj => obj !== body);
+        updateStatus('Deleted object');
+    }
+    
+    // Update the object counter after deletion
+    updateObjectCounter();
 }
 
 // Initialize game when page loads
