@@ -9,6 +9,14 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
+    touch-action: pan-y; /* Allow vertical scrolling but prevent other gestures */
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+/* Mobile device optimizations */
+body.mobile-device {
+    padding: 0;
+    overflow-x: hidden;
 }
 
 .container {
@@ -239,18 +247,141 @@ header p {
 }
 
 @media (max-width: 768px) {
+    body {
+        padding: 0;
+    }
+    
+    .container {
+        border-radius: 0;
+    }
+    
     header h1 {
         font-size: 1.8em;
     }
     
+    header p {
+        font-size: 1em;
+    }
+    
     .controls {
         flex-direction: column;
+        padding: 10px;
+        max-height: none;
+        overflow: visible;
+    }
+    
+    .control-group {
+        min-width: 100%;
+        margin-bottom: 10px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        background: white;
+        overflow: hidden;
+    }
+    
+    .control-group h3 {
+        padding: 12px;
+        margin: 0;
+        background: #667eea;
+        color: white;
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .control-group h3:after {
+        content: '▼';
+        font-size: 0.8em;
+        transition: transform 0.3s ease;
+    }
+    
+    .control-group.collapsed h3:after {
+        transform: rotate(-90deg);
+    }
+    
+    .control-group > *:not(h3) {
+        padding: 10px;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+    }
+    
+    .control-group.collapsed > *:not(h3) {
+        display: none;
     }
     
     .tool-btn, .action-btn {
         display: block;
         width: 100%;
         margin: 5px 0;
+        padding: 15px;
+        font-size: 1.1em;
+        min-height: 44px; /* Minimum touch target size */
+    }
+    
+    .save-input, .saved-list {
+        min-height: 44px;
+        font-size: 1.1em;
+    }
+    
+    .game-area {
+        padding: 10px;
+    }
+    
+    #gameCanvas {
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+    }
+    
+    .instructions {
+        padding: 15px;
+        font-size: 0.9em;
+    }
+    
+    .instructions ol {
+        margin-left: 15px;
+    }
+    
+    /* Mobile-specific status displays */
+    #status, .object-counter, .doom-status {
+        font-size: 1em;
+        padding: 12px;
+    }
+    
+    /* Make score modal more mobile-friendly */
+    .score-modal-content {
+        padding: 20px;
+        width: 95%;
+    }
+    
+    .score-header h2 {
+        font-size: 2em;
+    }
+    
+    .score-number {
+        font-size: 2.5em;
+    }
+    
+    .score-stars {
+        font-size: 2.5em;
+        letter-spacing: 5px;
+    }
+}
+
+/* Touch feedback for mobile */
+@media (hover: none) and (pointer: coarse) {
+    .tool-btn:active, .action-btn:active {
+        transform: scale(0.95);
+        background: #e0e0e0;
+    }
+    
+    .tool-btn.active:active {
+        background: #5568d3;
+    }
+    
+    .run-btn:active {
+        background: #1e7e34;
     }
 }
 

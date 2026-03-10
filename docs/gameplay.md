@@ -246,6 +246,8 @@ The game includes a complete save/load system that stores your contraptions in y
 
 ## 🎮 Controls Reference
 
+### Desktop Controls
+
 | Action | Control |
 |--------|---------|
 | Select Object | Click object button |
@@ -265,6 +267,30 @@ The game includes a complete save/load system that stores your contraptions in y
 | Save Design | Type name and click "💾 Save" or press `Enter` |
 | Load Design | Select from dropdown and click "📂 Load" |
 | Delete Saved Design | Select from dropdown and click "🗑️ Delete" |
+
+### 📱 Mobile/Touch Controls
+
+| Action | Control |
+|--------|---------|
+| Select Object | Tap object button |
+| Place Object | Tap on canvas |
+| Delete Object | Long-press (0.5s) on object |
+| Rotate Ramp | Two-finger twist gesture on canvas |
+| Toggle Sections | Tap section headers to expand/collapse |
+| Run Machine | Tap "▶️ Run Machine" |
+| Pause/Resume | Tap "⏸️ Pause" / "▶️ Play" |
+| Slow Motion Toggle | Tap "🐌 Slow-Mo" |
+| Reset/Clear/Undo/Redo | Tap respective buttons |
+| Toggle Grid/Sound | Tap respective buttons |
+| Save/Load/Delete | Use same buttons as desktop |
+
+**Mobile Tips:**
+- Control sections (Objects, Save/Load) are collapsible to save screen space - tap headers to expand/collapse
+- Actions and Status sections are expanded by default for quick access
+- Long-press deletion has haptic feedback (vibration) on supported devices
+- Two-finger rotation for ramps provides subtle haptic feedback
+- All buttons are sized for comfortable touch (minimum 44x44px)
+- The game automatically detects mobile devices and optimizes performance
 
 ## ❓ Frequently Asked Questions
 
@@ -306,6 +332,18 @@ A: The Grid button enables/disables a 40px grid overlay on the canvas. When enab
 
 **Q: Does the NPC fight back?**  
 A: Nope! The NPC is purely a target and doesn't move or defend itself (until you hit it).
+
+**Q: How do I play on mobile devices?**  
+A: The game fully supports mobile! Tap to place objects, long-press to delete them, and use two fingers to rotate ramps. The UI automatically adapts with larger buttons and collapsible sections. Control panels collapse to save screen space - just tap the section headers to expand/collapse them.
+
+**Q: Why do some control sections appear collapsed on mobile?**  
+A: On mobile, the Objects and Save/Load sections start collapsed to maximize screen space for the game canvas. Actions and Status remain expanded for quick access. Tap any section header to toggle it.
+
+**Q: Does mobile support keyboard shortcuts?**  
+A: Mobile devices typically don't have physical keyboards, so touch gestures replace keyboard controls. For example, two-finger rotation replaces the Q/E keys for ramps.
+
+**Q: How do I delete objects on mobile?**  
+A: Long-press (hold your finger down for 0.5 seconds) on any object to delete it. You'll feel a small vibration (on supported devices) when the deletion happens.
 
 ## 🎪 Fun Facts
 
