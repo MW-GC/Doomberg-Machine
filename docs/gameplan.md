@@ -42,6 +42,12 @@ All completed features are documented in detail in [technical.md](technical.md) 
 | **Grid/Snap Toggle** | Optional 40px grid overlay with snap-to-grid placement | [gameplay.md](gameplay.md#controls-reference) |
 | **Sound Effects** | Web Audio API oscillator synthesis for game actions | [technical.md](technical.md#8-sound-system) |
 
+### Phase 3: Advanced Features (Completed February 2026)
+
+| Feature | Description | Details |
+|---------|-------------|---------|
+| **Replay/Recording System** | Frame-by-frame simulation recording and playback with localStorage persistence | [technical.md](technical.md#10-replay--recording-system) [gameplay.md](gameplay.md#-replay--recording-system) |
+
 ---
 
 ## 📋 Current State Assessment
@@ -54,7 +60,7 @@ All completed features are documented in detail in [technical.md](technical.md) 
 4. **Documentation**: Comprehensive user and developer docs
 5. **Accessibility**: Keyboard controls and focus states
 6. **Browser Compatibility**: Works across modern browsers
-7. **Completed Features**: All Phase 1 & 2 features implemented (see table above)
+7. **Completed Features**: All Phase 1, 2 & 3 features implemented (see tables above)
 
 ### 🎯 Areas for Future Enhancement
 
@@ -62,12 +68,13 @@ All completed features are documented in detail in [technical.md](technical.md) 
    - More object types (fan, rope, portal, magnet, conveyor - see section 6)
    - Level system with progression
    - Mobile/touch support
-   - Replay functionality
+   - Challenge/tutorial modes
 
 2. **Technical Improvements**
    - Code modularization
    - Automated testing
    - Build/minification pipeline
+   - Recording export/import for sharing
 
 3. **Polish & UX**
    - Particle effects
