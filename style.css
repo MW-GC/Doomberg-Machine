@@ -4,9 +4,36 @@
     box-sizing: border-box;
 }
 
+:root {
+    /* Default theme (Classic) - will be overridden by JavaScript */
+    --body-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --header-bg: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --controls-bg: #f8f9fa;
+    --container-bg: white;
+    --border-color: #dee2e6;
+    --text-primary: #495057;
+    --text-secondary: #666;
+    --button-bg: white;
+    --button-hover: #667eea;
+    --run-btn-bg: #28a745;
+    --run-btn-hover: #218838;
+    --active-btn-bg: #ffc107;
+    --status-bg: #e9ecef;
+    --alive-status-bg: #d4edda;
+    --alive-status-color: #155724;
+    --alive-status-border: #c3e6cb;
+    --doomed-status-bg: #f8d7da;
+    --doomed-status-color: #721c24;
+    --doomed-status-border: #f5c6cb;
+    --canvas-border: #495057;
+    --focus-outline: #4CAF50;
+    --modal-overlay: rgba(0, 0, 0, 0.8);
+    --score-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--body-bg);
     min-height: 100vh;
     padding: 20px;
 }
@@ -14,14 +41,14 @@ body {
 .container {
     max-width: 1400px;
     margin: 0 auto;
-    background: white;
+    background: var(--container-bg);
     border-radius: 15px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
     overflow: hidden;
 }
 
 header {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    background: var(--header-bg);
     color: white;
     padding: 20px;
     text-align: center;
@@ -43,8 +70,8 @@ header p {
     flex-wrap: wrap;
     gap: 20px;
     padding: 20px;
-    background: #f8f9fa;
-    border-bottom: 2px solid #dee2e6;
+    background: var(--controls-bg);
+    border-bottom: 2px solid var(--border-color);
 }
 
 .control-group {
@@ -54,7 +81,7 @@ header p {
 
 .control-group h3 {
     margin-bottom: 10px;
-    color: #495057;
+    color: var(--text-primary);
     font-size: 1.1em;
 }
 
@@ -62,8 +89,9 @@ header p {
     display: inline-block;
     margin: 5px;
     padding: 10px 15px;
-    border: 2px solid #dee2e6;
-    background: white;
+    border: 2px solid var(--border-color);
+    background: var(--button-bg);
+    color: var(--text-primary);
     border-radius: 8px;
     cursor: pointer;
     font-size: 1em;
@@ -81,14 +109,14 @@ header p {
 }
 
 .tool-btn:focus, .action-btn:focus {
-    outline: 3px solid #4CAF50;
+    outline: 3px solid var(--focus-outline);
     outline-offset: 2px;
 }
 
 .tool-btn.active {
-    background: #667eea;
+    background: var(--button-hover);
     color: white;
-    border-color: #667eea;
+    border-color: var(--button-hover);
 }
 
 .action-btn {
@@ -96,13 +124,13 @@ header p {
 }
 
 .run-btn {
-    background: #28a745;
+    background: var(--run-btn-bg);
     color: white;
-    border-color: #28a745;
+    border-color: var(--run-btn-bg);
 }
 
 .run-btn:hover {
-    background: #218838;
+    background: var(--run-btn-hover);
 }
 
 .run-btn:disabled {
@@ -118,9 +146,9 @@ header p {
 }
 
 .action-btn.active {
-    background: #ffc107;
+    background: var(--active-btn-bg);
     color: #000;
-    border-color: #ffc107;
+    border-color: var(--active-btn-bg);
     font-weight: bold;
 }
 
@@ -131,7 +159,8 @@ header p {
 
 #status {
     padding: 10px;
-    background: #e9ecef;
+    background: var(--status-bg);
+    color: var(--text-primary);
     border-radius: 5px;
     margin-top: 10px;
     font-weight: 500;
@@ -139,11 +168,11 @@ header p {
 
 .object-counter {
     padding: 10px;
-    background: #e9ecef;
+    background: var(--status-bg);
+    color: var(--text-primary);
     border-radius: 5px;
     margin-top: 10px;
     font-weight: 500;
-    color: #495057;
 }
 
 .save-load-controls {
@@ -154,32 +183,70 @@ header p {
 
 .save-input {
     padding: 10px;
-    border: 2px solid #dee2e6;
+    border: 2px solid var(--border-color);
+    background: var(--button-bg);
+    color: var(--text-primary);
     border-radius: 8px;
     font-size: 1em;
     width: 100%;
 }
 
 .save-input:focus {
-    outline: 3px solid #4CAF50;
+    outline: 3px solid var(--focus-outline);
     outline-offset: 2px;
-    border-color: #667eea;
+    border-color: var(--button-hover);
 }
 
 .saved-list {
     padding: 10px;
-    border: 2px solid #dee2e6;
+    border: 2px solid var(--border-color);
+    background: var(--button-bg);
+    color: var(--text-primary);
     border-radius: 8px;
     font-size: 1em;
-    background: white;
     cursor: pointer;
     width: 100%;
 }
 
 .saved-list:focus {
-    outline: 3px solid #4CAF50;
+    outline: 3px solid var(--focus-outline);
     outline-offset: 2px;
-    border-color: #667eea;
+    border-color: var(--button-hover);
+}
+
+.theme-selector-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 5px;
+    padding: 10px 0;
+}
+
+.theme-selector-wrapper label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.theme-selector {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border-color);
+    background: var(--button-bg);
+    color: var(--text-primary);
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.theme-selector:hover {
+    border-color: var(--button-hover);
+}
+
+.theme-selector:focus {
+    outline: 3px solid var(--focus-outline);
+    outline-offset: 2px;
+    border-color: var(--button-hover);
 }
 
 .doom-status {
@@ -187,15 +254,15 @@ header p {
     margin-top: 10px;
     border-radius: 5px;
     font-weight: bold;
-    background: #d4edda;
-    color: #155724;
-    border: 2px solid #c3e6cb;
+    background: var(--alive-status-bg);
+    color: var(--alive-status-color);
+    border: 2px solid var(--alive-status-border);
 }
 
 .doom-status.doomed {
-    background: #f8d7da;
-    color: #721c24;
-    border: 2px solid #f5c6cb;
+    background: var(--doomed-status-bg);
+    color: var(--doomed-status-color);
+    border: 2px solid var(--doomed-status-border);
     animation: doom-pulse 0.5s ease-in-out 3;
 }
 
@@ -206,32 +273,32 @@ header p {
 
 .game-area {
     padding: 20px;
-    background: #f8f9fa;
+    background: var(--controls-bg);
 }
 
 #gameCanvas {
     display: block;
     margin: 0 auto;
-    border: 3px solid #495057;
+    border: 3px solid var(--canvas-border);
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .instructions {
     padding: 20px;
-    background: white;
-    border-top: 2px solid #dee2e6;
+    background: var(--container-bg);
+    border-top: 2px solid var(--border-color);
 }
 
 .instructions h3 {
-    color: #495057;
+    color: var(--text-primary);
     margin-bottom: 10px;
 }
 
 .instructions ol {
     margin-left: 20px;
     line-height: 1.8;
-    color: #666;
+    color: var(--text-secondary);
 }
 
 .instructions li {
@@ -252,6 +319,10 @@ header p {
         width: 100%;
         margin: 5px 0;
     }
+    
+    .theme-selector-wrapper {
+        width: 100%;
+    }
 }
 
 /* Score Modal Styles */
@@ -262,7 +333,7 @@ header p {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: var(--modal-overlay);
     z-index: 1000;
     justify-content: center;
     align-items: center;
@@ -275,7 +346,7 @@ header p {
 }
 
 .score-modal-content {
-    background: white;
+    background: var(--container-bg);
     border-radius: 20px;
     padding: 40px;
     max-width: 500px;
@@ -301,7 +372,7 @@ header p {
 }
 
 .score-header h2 {
-    color: #667eea;
+    color: var(--button-hover);
     font-size: 2.5em;
     margin-bottom: 15px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
@@ -326,7 +397,7 @@ header p {
     text-align: center;
     margin-bottom: 30px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--score-gradient);
     border-radius: 15px;
     color: white;
 }
@@ -352,7 +423,7 @@ header p {
 }
 
 .score-table tr {
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .score-table td {
@@ -361,17 +432,17 @@ header p {
 }
 
 .score-table td:first-child {
-    color: #495057;
+    color: var(--text-primary);
 }
 
 .score-table td:last-child {
     text-align: right;
     font-weight: bold;
-    color: #28a745;
+    color: var(--run-btn-bg);
 }
 
 .score-table td.multiplier {
-    color: #ffc107;
+    color: var(--active-btn-bg);
     font-size: 1.3em;
 }
 
@@ -379,7 +450,7 @@ header p {
     width: 100%;
     padding: 15px;
     font-size: 1.2em;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--score-gradient);
     color: white;
     border: none;
     border-radius: 10px;
